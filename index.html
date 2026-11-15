@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kehadiran & Analisis Pelajar - Politeknik Port Dickson</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fredoka & Plus Jakarta Sans untuk gaya 3D moden & ceria seperti poster rujukan -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- QRCode.js untuk penjanaan QR Dinamik sebenar -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Chart.js untuk visualisasi analisis -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS (xlsx) untuk menjana fail hamparan berbilang tab mengikut kelas untuk Google Sheets -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 35%, #f8fafc 100%);
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+        .font-display {
+            font-family: 'Fredoka', sans-serif;
+        }
+        /* Gaya Kad 3D Berbingkai (Diinspirasikan dari poster POLIPD) */
+        .card-3d-blue {
+            background: #ffffff;
+            border: 3px solid #1d4ed8;
+            box-shadow: 0 8px 0 #1e3a8a, 0 12px 20px rgba(30, 58, 138, 0.15);
+            border-radius: 1.5rem;
+        }
+        .card-3d-green {
+            background: #ffffff;
+            border: 3px solid #16a34a;
+            box-shadow: 0 8px 0 #15803d, 0 12px 20px rgba(21, 128, 61, 0.15);
+            border-radius: 1.5rem;
+        }
+        .card-3d-yellow {
+            background: #fefce8;
+            border: 3px solid #eab308;
+            box-shadow: 0 6px 0 #ca8a04, 0 10px 15px rgba(202, 138, 4, 0.15);
+            border-radius: 1.25rem;
+        }
+        .card-3d-red {
+            background: #ffffff;
+            border: 3px solid #dc2626;
+            box-shadow: 0 6px 0 #991b1b, 0 10px 15px rgba(153, 27, 27, 0.15);
+            border-radius: 1.25rem;
+        }
+        .banner-3d {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+            box-shadow: 0 8px 0 #172554, 0 15px 25px rgba(23, 37, 84, 0.25);
+        }
+        .pill-red-3d {
+            background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 5px 0 #991b1b;
+        }
+        .btn-3d {
+            transition: all 0.15s ease;
+        }
+        .btn-3d:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.3) !important;
+        }
+        .text-stroke-yellow {
+            color: #facc15;
+            text-shadow: 0 3px 0 #b45309, 0 4px 8px rgba(0,0,0,0.3);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- NOTIFIKASI TOAST (Pengganti alert()) -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- HEADER UTAMA BERGAYA POSTER POLITEKNIK PORT DICKSON -->
+    <header class="pt-4 pb-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        <div class="banner-3d rounded-3xl p-5 sm:p-7 text-white relative overflow-hidden">
+            <!-- Dekorasi Latar -->
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-blue-400 opacity-20 rounded-full blur-xl"></div>
+            <div class="absolute left-1/3 -bottom-12 w-48 h-48 bg-yellow-300 opacity-10 rounded-full blur-xl"></div>
+
+            <div class="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+                <!-- Logo & Identiti Institusi -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                    <div class="bg-white px-4 py-3 rounded-2xl shadow-lg border-2 border-slate-200 flex flex-col items-center justify-center min-w-[170px]">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-red-600 inline-block"></span>
+                            <span class="font-display font-bold text-slate-900 text-lg tracking-tight leading-none">POLITEKNIK</span>
+                        </div>
+                        <div class="border-t-2 border-red-600 w-full my-1"></div>
+                        <span class="font-bold text-slate-800 text-xs tracking-wider">PORT DICKSON</span>
+                    </div>
+
+                    <div>
+                        <div class="inline-flex items-center gap-2 bg-blue-950/60 px-3 py-1 rounded-full text-xs font-bold text-blue-200 mb-1.5 border border-blue-400/30">
+                            <i class="fa-solid fa-shield-halved text-yellow-400"></i> SISTEM KEHADIRAN DIGITAL & ANALISIS PINTAR
+                        </div>
+                        <h1 class="font-display text-2xl sm:text-4xl font-bold tracking-wide uppercase leading-tight">
+                            REKOD <span class="text-stroke-yellow">KEHADIRAN</span> & <span class="text-emerald-300">PRESTASI</span>
+                        </h1>
+                        <p class="text-blue-100 text-xs sm:text-sm mt-1">Jabatan Matematik, Sains dan Komputer (JMSK) • Politeknik Port Dickson</p>
+                    </div>
+                </div>
+
+                <!-- Paparan Sesi Aktif & Butang Log Masuk Admin -->
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto justify-center">
+                    <!-- Badge Sesi (Hanya boleh diklik apabila Admin log masuk) -->
+                    <button id="btnEditSesiBadge" onclick="handleSesiBadgeClick()" class="pill-red-3d btn-3d px-5 py-2.5 rounded-2xl text-white font-display font-bold text-sm sm:text-base tracking-wider flex items-center gap-2 border-2 border-red-300/50 cursor-pointer w-full sm:w-auto justify-center">
+                        <i class="fa-solid fa-calendar-check"></i>
+                        <span id="displaySesi">SESI 1 : 2026/2027</span>
+                        <i id="sesiEditIcon" class="fa-solid fa-pen-to-square text-xs opacity-80 ml-1 hidden"></i>
+                    </button>
+
+                    <!-- Pemilih Kelas Utama (Dipaparkan apabila Admin log masuk) -->
+                    <div id="adminGlobalClassBox" class="hidden bg-white text-slate-800 px-4 py-2 rounded-2xl shadow-md border-2 border-yellow-400 items-center gap-2 w-full sm:w-auto">
+                        <i class="fa-solid fa-users-rectangle text-blue-600 text-lg"></i>
+                        <div class="flex flex-col flex-1">
+                            <label for="globalClassFilter" class="text-[10px] font-extrabold uppercase text-slate-400 leading-none">Paparan Kelas:</label>
+                            <select id="globalClassFilter" onchange="handleGlobalClassChange()" class="font-display font-bold text-blue-900 text-sm sm:text-base bg-transparent focus:outline-none cursor-pointer">
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Butang Akses Admin -->
+                    <button id="btnHeaderAdminLogin" onclick="requestAdminTab('stay')" class="btn-3d bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-display font-bold text-xs sm:text-sm px-4 py-2.5 rounded-2xl shadow-[0_4px_0_#b45309] flex items-center justify-center gap-2 border-2 border-yellow-200 cursor-pointer w-full sm:w-auto">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>LOG MASUK ADMIN</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- NAVIGASI MOD PAPARAN (HANYA MUNCUL SELEPAS LOG MASUK ADMIN) -->
+    <nav id="adminNavBar" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full mb-6">
+        <div class="bg-white/95 backdrop-blur-md p-2.5 rounded-2xl shadow-md border-2 border-blue-300 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                <button onclick="switchTab('tab-qr')" id="btn-tab-qr" class="tab-btn flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 bg-blue-600 text-white shadow-md transition cursor-pointer">
+                    <i class="fa-solid fa-qrcode"></i> <span>Paparan QR & Live</span>
+                </button>
+                <button onclick="switchTab('tab-dashboard')" id="btn-tab-dashboard" class="tab-btn flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 text-slate-600 hover:bg-blue-50 transition cursor-pointer">
+                    <i class="fa-solid fa-chart-pie"></i> <span>Dashboard Analisis</span>
+                </button>
+                <button onclick="switchTab('tab-spmp')" id="btn-tab-spmp" class="tab-btn flex-1 sm:flex-none px-4 py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 text-slate-600 hover:bg-blue-50 transition cursor-pointer">
+                    <i class="fa-solid fa-database"></i> <span>Data SPMP & PB</span>
+                </button>
+            </div>
+
+            <!-- Kawalan Admin Sahaja -->
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                <button onclick="openSesiAndClassModal()" class="bg-blue-100 hover:bg-blue-200 text-blue-900 font-bold text-xs px-3 py-2.5 rounded-xl border border-blue-300 flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-calendar-plus"></i> Tetapan Sesi & Kelas
+                </button>
+                <button onclick="openStudentScanForm()" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-xs px-3 py-2.5 rounded-xl border border-emerald-300 flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-mobile-screen"></i> Simulasi Borang
+                </button>
+                <button onclick="lockAdminMode()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-lock"></i> Kunci Admin
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- KANDUNGAN UTAMA -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1 pb-12">
+
+        <!-- ===================================================================== -->
+        <!-- TAB 1: FRONT-END UTAMA (INFO KELAS ATAS + QR KIRI + LIVE FEED KANAN)  -->
+        <!-- ===================================================================== -->
+        <section id="tab-qr" class="tab-content space-y-6">
+
+            <!-- BAHAGIAN ATAS: PAPARAN MAKLUMAT KELAS, TARIKH, WAKTU & LOKASI (F2F / ONLINE) -->
+            <div class="card-3d-blue overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-3.5 flex flex-wrap items-center justify-between gap-2 text-white">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-yellow-400 text-blue-950 flex items-center justify-center font-bold shadow">
+                            <i class="fa-solid fa-chalkboard-user"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-display font-bold text-base sm:text-lg tracking-wide uppercase">MAKLUMAT PERJUMPAAN KULIAH SEMASA</h2>
+                        </div>
+                    </div>
+                    <!-- Butang Ubah Tetapan hanya muncul apabila Admin log masuk -->
+                    <button id="btnAdminToggleSetup" onclick="toggleMeetingSetupPanel()" class="hidden bg-yellow-400 hover:bg-yellow-300 text-blue-950 font-extrabold text-xs px-3.5 py-1.5 rounded-xl shadow items-center gap-1.5 cursor-pointer transition">
+                        <i class="fa-solid fa-sliders"></i> <span id="btnToggleSetupText">Ubah Tetapan Kelas</span>
+                    </button>
+                </div>
+
+                <!-- Kad Ringkasan 5 Info Utama di Bahagian Atas -->
+                <div class="p-5 bg-white">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                        <!-- 1. Kelas & Kursus -->
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3.5 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg shrink-0">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-extrabold text-blue-500 uppercase">Kelas Aktif</p>
+                                <p class="font-display font-bold text-lg text-blue-950 truncate" id="topDisplayClass">DKA1A</p>
+                                <p class="text-[11px] font-semibold text-slate-600 truncate" id="topDisplayCourse">DCC10012</p>
+                            </div>
+                        </div>
+
+                        <!-- 2. Tarikh -->
+                        <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3.5 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center text-lg shrink-0">
+                                <i class="fa-solid fa-calendar-day"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-extrabold text-amber-600 uppercase">Tarikh</p>
+                                <p class="font-display font-bold text-base sm:text-lg text-slate-900 truncate" id="topDisplayDate">2026-11-15</p>
+                                <p class="text-[11px] font-semibold text-amber-800 truncate" id="topDisplayNotes">Kuliah Minggu 6</p>
+                            </div>
+                        </div>
+
+                        <!-- 3. Waktu -->
+                        <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-3.5 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shrink-0">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-extrabold text-emerald-600 uppercase">Waktu Kelas</p>
+                                <p class="font-display font-bold text-sm sm:text-base text-slate-900 leading-tight" id="topDisplayTime">02:00 PM - 04:00 PM</p>
+                            </div>
+                        </div>
+
+                        <!-- 4. Lokasi (F2F atau Online) -->
+                        <div class="bg-purple-50 border-2 border-purple-200 rounded-2xl p-3.5 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center text-lg shrink-0" id="topLocationIconBox">
+                                <i class="fa-solid fa-building-columns" id="topLocationIcon"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-extrabold text-purple-600 uppercase">Lokasi / Mod</p>
+                                <p class="font-display font-bold text-base text-purple-950 truncate" id="topDisplayLocation">F2F (Bersemuka)</p>
+                                <p class="text-[11px] font-semibold text-purple-700 truncate" id="topDisplayRoom">BK 4 / Makmal</p>
+                            </div>
+                        </div>
+
+                        <!-- 5. Kenyataan / Jenis Perjumpaan -->
+                        <div class="col-span-2 sm:col-span-1 bg-red-50 border-2 border-red-200 rounded-2xl p-3.5 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center text-lg shrink-0">
+                                <i class="fa-solid fa-tag"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-extrabold text-red-600 uppercase">Kenyataan</p>
+                                <p class="font-display font-bold text-base text-red-950 truncate" id="topDisplayType">Kelas Semasa</p>
+                                <p class="text-[11px] font-semibold text-slate-600 truncate">Sesi Aktif</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel Tetapan Pensyarah (Hanya boleh dibuka oleh Admin) -->
+                    <div id="meetingSetupPanel" class="hidden mt-5 pt-5 border-t-2 border-dashed border-blue-200 space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Kelas Terlibat</label>
+                                <select id="meetingClass" onchange="syncClassFromMeeting()" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-600 font-bold text-sm text-slate-800 bg-slate-50">
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Kod & Nama Kursus</label>
+                                <input type="text" id="meetingCourse" value="DCC10012 - Civil Engineering Materials" oninput="updateMeetingPreview()" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-600 font-semibold text-sm text-slate-800 bg-slate-50">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Tarikh Perjumpaan</label>
+                                <input type="date" id="meetingDate" onchange="updateMeetingPreview()" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-600 font-bold text-sm text-slate-800 bg-slate-50">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Masa Kelas</label>
+                                <select id="meetingTime" onchange="updateMeetingPreview()" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-600 font-bold text-sm text-slate-800 bg-slate-50">
+                                    <option value="08:00 AM - 10:00 AM">08:00 AM - 10:00 AM</option>
+                                    <option value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</option>
+                                    <option value="02:00 PM - 04:00 PM" selected>02:00 PM - 04:00 PM</option>
+                                    <option value="04:00 PM - 06:00 PM">04:00 PM - 06:00 PM</option>
+                                    <option value="08:00 PM - 10:00 PM">08:00 PM - 10:00 PM (Malam)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Lokasi (F2F atau Online)</label>
+                                <select id="meetingLocation" onchange="updateMeetingPreview()" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-purple-200 focus:border-purple-600 font-bold text-sm text-purple-950 bg-purple-50/50">
+                                    <option value="F2F (Bersemuka)" selected>F2F (Bersemuka di Kampus)</option>
+                                    <option value="Online (MS Teams / CIDOS)">Online (MS Teams / CIDOS / Meet)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Bilik Kuliah / Pautan Ringkas</label>
+                                <input type="text" id="meetingRoom" value="BK 4 / Makmal Konkrit" oninput="updateMeetingPreview()" placeholder="Cth: BK 4 atau MS Teams" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-600 font-semibold text-sm text-slate-800 bg-slate-50">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                            <div class="lg:col-span-7">
+                                <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1.5">Kenyataan / Jenis Perjumpaan</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="meetingType" value="Kelas Semasa" checked class="peer sr-only" onchange="updateMeetingPreview()">
+                                        <div class="p-2 rounded-xl border-2 border-slate-200 peer-checked:border-blue-600 peer-checked:bg-blue-50 text-center text-xs font-extrabold text-slate-800">Kelas Semasa</div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="meetingType" value="Kelas Ganti" class="peer sr-only" onchange="updateMeetingPreview()">
+                                        <div class="p-2 rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 text-center text-xs font-extrabold text-slate-800">Kelas Ganti</div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="meetingType" value="Kelas Perbincangan" class="peer sr-only" onchange="updateMeetingPreview()">
+                                        <div class="p-2 rounded-xl border-2 border-slate-200 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 text-center text-xs font-extrabold text-slate-800">Perbincangan</div>
+                                    </label>
+                                    <label class="cursor-pointer">
+                                        <input type="radio" name="meetingType" value="Lain-lain Perjumpaan" class="peer sr-only" onchange="updateMeetingPreview()">
+                                        <div class="p-2 rounded-xl border-2 border-slate-200 peer-checked:border-purple-600 peer-checked:bg-purple-50 text-center text-xs font-extrabold text-slate-800">Lain-lain</div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="lg:col-span-5 flex gap-2">
+                                <input type="text" id="meetingNotes" value="Kuliah Minggu 6" oninput="updateMeetingPreview()" placeholder="Catatan tambahan..." class="w-full px-3.5 py-2 rounded-xl border-2 border-slate-200 text-xs font-semibold">
+                                <button onclick="generateDynamicQR(true); toggleMeetingSetupPanel();" class="btn-3d bg-blue-600 text-white font-display font-bold text-xs px-4 py-2.5 rounded-xl shadow-[0_4px_0_#1e3a8a] shrink-0 cursor-pointer">
+                                    SIMPAN & JANA QR
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BAHAGIAN BAWAH (2 KOLUM): KIRI = QR CODE DINAMIK, KANAN = LIVE FEED PELAJAR BARU ISI -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- KOLUM KIRI (5/12): KOD QR DINAMIK & MAKLUMAN -->
+                <div class="lg:col-span-5 card-3d-green overflow-hidden flex flex-col">
+                    <div class="bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-4 flex items-center justify-between text-white">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-white text-green-700 flex items-center justify-center text-xl shadow-md">
+                                <i class="fa-solid fa-qrcode"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-display font-bold text-lg sm:text-xl tracking-wide uppercase">IMBAS QR KEHADIRAN</h2>
+                                <p class="text-xs text-green-100">Sila imbas menggunakan kamera telefon anda</p>
+                            </div>
+                        </div>
+                        <span class="bg-green-900/50 text-white text-xs font-extrabold px-3 py-1 rounded-full">
+                            ● AKTIF
+                        </span>
+                    </div>
+
+                    <div class="p-6 flex flex-col items-center justify-center text-center flex-1 space-y-4">
+                        <!-- Kotak Kod QR -->
+                        <div class="relative p-5 bg-white rounded-3xl border-4 border-dashed border-green-500 shadow-inner flex items-center justify-center min-w-[230px] min-h-[230px]">
+                            <div id="qrcodeCanvas" class="flex items-center justify-center"></div>
+                        </div>
+
+                        <!-- Nota Makluman Ringkas (Tanpa Countdown Timer) -->
+                        <div class="w-full card-3d-yellow p-3.5 text-left flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 mt-0.5">
+                                <i class="fa-solid fa-shield-halved text-sm"></i>
+                            </div>
+                            <div class="text-xs text-amber-950 space-y-1">
+                                <p class="font-extrabold uppercase">Makluman Keselamatan Kehadiran:</p>
+                                <p class="leading-relaxed">Kod QR dan pautan borang akan <strong>dikemas kini secara automatik setiap 5 minit</strong>. Pelajar mempunyai tempoh <strong>3 minit</strong> selepas imbasan untuk menghantar maklumat.</p>
+                            </div>
+                        </div>
+
+                        <!-- Kawalan Pautan & Skrin Penuh (Hanya muncul apabila Admin log masuk) -->
+                        <div id="adminQrTools" class="hidden w-full space-y-3 pt-2 border-t border-slate-200">
+                            <div>
+                                <label class="block text-[11px] font-extrabold text-slate-500 uppercase text-left mb-1">Pautan Borang Semasa (Admin):</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="text" id="dynamicLinkInput" readonly class="w-full bg-slate-100 border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-700 select-all">
+                                    <button onclick="copyDynamicLink()" class="bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 cursor-pointer">
+                                        <i class="fa-regular fa-copy"></i> Salin
+                                    </button>
+                                </div>
+                            </div>
+                            <button onclick="openProjectorView()" class="btn-3d w-full bg-blue-900 hover:bg-blue-800 text-white font-display font-bold text-xs py-2.5 px-3 rounded-xl shadow-[0_4px_0_#0f172a] flex items-center justify-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-display text-yellow-300"></i>
+                                <span>PAPARAN SKRIN PENUH QR</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KOLUM KANAN (7/12): LIVE SHOW SIAPA YANG BARU ISI FORM -->
+                <div class="lg:col-span-7 card-3d-blue overflow-hidden flex flex-col">
+                    <div class="bg-gradient-to-r from-blue-800 to-indigo-600 px-6 py-4 flex items-center justify-between text-white">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-red-500 text-white flex items-center justify-center text-lg shadow-md relative">
+                                <i class="fa-solid fa-tower-broadcast"></i>
+                                <span class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300 rounded-full animate-ping"></span>
+                            </div>
+                            <div>
+                                <h2 class="font-display font-bold text-lg sm:text-xl tracking-wide uppercase flex items-center gap-2">
+                                    LIVE FEED KEHADIRAN SEMASA
+                                </h2>
+                                <p class="text-xs text-blue-100">Senarai pelajar yang telah berjaya merekodkan kehadiran</p>
+                            </div>
+                        </div>
+                        <div class="bg-white text-blue-950 font-display font-bold text-sm px-3.5 py-1.5 rounded-xl shadow border-2 border-yellow-400">
+                            <span id="liveFeedCount">0</span> Hadir
+                        </div>
+                    </div>
+
+                    <!-- Senarai Live Stream Pelajar -->
+                    <div class="p-5 flex-1 flex flex-col justify-between bg-slate-50/70">
+                        <div id="liveFeedList" class="space-y-2.5 max-h-[390px] overflow-y-auto pr-1">
+                            <!-- Diisi secara langsung oleh JavaScript -->
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 font-semibold">
+                            <span><i class="fa-solid fa-circle-check text-green-600 mr-1"></i> Dikemas kini secara langsung selepas imbasan</span>
+                            <button onclick="requestAdminTab('tab-dashboard')" class="text-blue-700 hover:underline font-extrabold flex items-center gap-1 cursor-pointer">
+                                <i class="fa-solid fa-lock text-[10px]"></i> Dashboard Admin →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TAB 2: DASHBOARD ANALISIS KEHADIRAN MENGIKUT KELAS                    -->
+        <!-- ===================================================================== -->
+        <section id="tab-dashboard" class="tab-content hidden space-y-6">
+            
+            <!-- Bar Penapis Lanjutan & Tindakan Google Sheets / Drive -->
+            <div class="card-3d-blue p-5">
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="bg-blue-600 text-white text-xs font-extrabold px-3 py-1 rounded-full uppercase">Paparan Khusus Kelas</span>
+                            <h2 class="font-display font-bold text-xl text-slate-900" id="dashboardClassHeading">ANALISIS KEHADIRAN: KELAS DKA1A</h2>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Tapis rekod mengikut jenis perjumpaan, tarikh, atau status kehadiran pelajar.</p>
+                    </div>
+
+                    <!-- Butang Eksport ke Google Sheets & Folder Drive -->
+                    <div class="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+                        <button onclick="exportToGoogleSheetsMultiTab()" class="btn-3d bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-[0_4px_0_#14532d] flex items-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-file-excel"></i>
+                            <span>Eksport Google Sheets (Tab Mengikut Kelas)</span>
+                        </button>
+                        <button onclick="openModal('modalGDrive')" class="btn-3d bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-[0_4px_0_#1e3a8a] flex items-center gap-2 cursor-pointer">
+                            <i class="fa-brands fa-google-drive text-yellow-300"></i>
+                            <span>Struktur Folder Drive</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Penapis Pelbagai Kriteria -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5 pt-4 border-t-2 border-slate-100">
+                    <div>
+                        <label class="block text-[11px] font-extrabold text-slate-500 uppercase mb-1">Tapis Kelas</label>
+                        <select id="dashFilterClass" onchange="syncFromDashFilter()" class="w-full px-3 py-2 rounded-xl border-2 border-blue-200 font-bold text-sm text-blue-900 bg-blue-50/50">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-extrabold text-slate-500 uppercase mb-1">Jenis Perjumpaan</label>
+                        <select id="dashFilterType" onchange="renderDashboard()" class="w-full px-3 py-2 rounded-xl border-2 border-slate-200 font-bold text-sm text-slate-700">
+                            <option value="SEMUA">Semua Jenis Perjumpaan</option>
+                            <option value="Kelas Semasa">Kelas Semasa</option>
+                            <option value="Kelas Ganti">Kelas Ganti</option>
+                            <option value="Kelas Perbincangan">Kelas Perbincangan</option>
+                            <option value="Lain-lain Perjumpaan">Lain-lain Perjumpaan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-extrabold text-slate-500 uppercase mb-1">Tarikh Perjumpaan</label>
+                        <input type="date" id="dashFilterDate" onchange="renderDashboard()" class="w-full px-3 py-2 rounded-xl border-2 border-slate-200 font-bold text-sm text-slate-700">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-extrabold text-slate-500 uppercase mb-1">Carian Nama / No. Pend.</label>
+                        <div class="flex gap-1">
+                            <input type="text" id="dashSearchInput" onkeyup="renderDashboard()" placeholder="Cari pelajar..." class="w-full px-3 py-2 rounded-xl border-2 border-slate-200 text-sm font-medium">
+                            <button onclick="resetDashFilters()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-slate-700 text-xs font-bold" title="Set Semula Penapis">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 Kad Statistik Utama (KPI) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <!-- KPI 1 -->
+                <div class="card-3d-blue p-5 flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-extrabold text-slate-400 uppercase">Jumlah Pelajar Kelas</p>
+                        <h3 class="font-display font-bold text-3xl text-slate-900" id="statTotalStudents">0</h3>
+                        <p class="text-xs font-semibold text-blue-600 mt-0.5" id="statClassSub">Berdaftar di SPMP</p>
+                    </div>
+                </div>
+
+                <!-- KPI 2 -->
+                <div class="card-3d-green p-5 flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-green-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-extrabold text-slate-400 uppercase">Peratus Kehadiran</p>
+                        <h3 class="font-display font-bold text-3xl text-green-600" id="statAttendanceRate">0%</h3>
+                        <p class="text-xs font-semibold text-slate-500 mt-0.5" id="statPresentCount">0 rekod hadir</p>
+                    </div>
+                </div>
+
+                <!-- KPI 3 -->
+                <div class="card-3d-yellow p-5 flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+                        <i class="fa-solid fa-calendar-week"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-extrabold text-amber-800 uppercase">Bilangan Perjumpaan</p>
+                        <h3 class="font-display font-bold text-3xl text-amber-950" id="statTotalSessions">0</h3>
+                        <p class="text-xs font-semibold text-amber-700 mt-0.5">Semasa, Ganti & Lain2</p>
+                    </div>
+                </div>
+
+                <!-- KPI 4 -->
+                <div class="card-3d-red p-5 flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-red-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-extrabold text-slate-400 uppercase">Amaran (< 80% Hadir)</p>
+                        <h3 class="font-display font-bold text-3xl text-red-600" id="statWarningCount">0</h3>
+                        <p class="text-xs font-semibold text-red-500 mt-0.5">Perlu surat amaran</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Carta Visualisasi Analisis -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-7 card-3d-blue p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-display font-bold text-lg text-blue-950 uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-blue-600"></i> Trend Kehadiran Mengikut Tarikh & Jenis Kelas
+                        </h3>
+                    </div>
+                    <div class="h-64 w-full">
+                        <canvas id="attendanceTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 card-3d-green p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-display font-bold text-lg text-green-950 uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-green-600"></i> Pecahan Jenis Perjumpaan
+                        </h3>
+                    </div>
+                    <div class="h-64 w-full flex items-center justify-center">
+                        <canvas id="meetingTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jadual Rekod Kehadiran Terperinci (Gaya Jadual Poster Rujukan) -->
+            <div class="card-3d-blue overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-white">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-yellow-400 text-blue-950 flex items-center justify-center font-bold shadow">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <h3 class="font-display font-bold text-lg uppercase tracking-wide">SENARAI REKOD KEHADIRAN TERPERINCI</h3>
+                    </div>
+                    <span class="text-xs font-bold bg-blue-900/60 px-3 py-1.5 rounded-full" id="tableRecordCounter">Menunjukkan 0 rekod</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-blue-50 border-b-2 border-blue-200 text-blue-950 text-xs font-extrabold uppercase">
+                                <th class="py-3.5 px-4">Bil.</th>
+                                <th class="py-3.5 px-4">No. Pendaftaran</th>
+                                <th class="py-3.5 px-4">Nama Pelajar</th>
+                                <th class="py-3.5 px-4">Kelas</th>
+                                <th class="py-3.5 px-4">No. Telefon</th>
+                                <th class="py-3.5 px-4">Tarikh & Masa Kelas</th>
+                                <th class="py-3.5 px-4">Jenis Perjumpaan</th>
+                                <th class="py-3.5 px-4 text-center">Masa Imbas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody" class="divide-y divide-slate-200 text-sm font-medium">
+                            <!-- Diisi oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- TAB 3: INTEGRASI SPMP & REKOD PENILAIAN BERTERUSAN (PB)                -->
+        <!-- ===================================================================== -->
+        <section id="tab-spmp" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Kad Import Data SPMP -->
+                <div class="lg:col-span-5 card-3d-blue overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-700 to-blue-500 px-6 py-4 text-white flex items-center gap-3">
+                        <i class="fa-solid fa-file-import text-yellow-300 text-xl"></i>
+                        <div>
+                            <h3 class="font-display font-bold text-lg uppercase">INTEGRASI DATA ASAL SPMP</h3>
+                            <p class="text-xs text-blue-100">Muat naik senarai pelajar dari sistem SPMP POLIPD</p>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="bg-blue-50 border-2 border-dashed border-blue-400 rounded-2xl p-5 text-center">
+                            <i class="fa-solid fa-cloud-arrow-up text-4xl text-blue-600 mb-2"></i>
+                            <p class="text-sm font-bold text-slate-800">Muat Naik Fail Senarai Pelajar SPMP (.CSV)</p>
+                            <p class="text-xs text-slate-500 mt-1 mb-4">Format lajur: No_Pendaftaran, Nama_Pelajar, Kelas, No_Telefon</p>
+                            <input type="file" id="spmpFileInput" accept=".csv" class="hidden" onchange="handleSPMPUpload(event)">
+                            <button onclick="document.getElementById('spmpFileInput').click()" class="btn-3d bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-[0_4px_0_#1e3a8a] cursor-pointer">
+                                Pilih Fail CSV SPMP
+                            </button>
+                        </div>
+
+                        <div class="card-3d-yellow p-4">
+                            <h4 class="font-display font-bold text-sm text-amber-900 flex items-center gap-2">
+                                <i class="fa-solid fa-lightbulb text-amber-600"></i> MODUL TAMBAHBAIK SEDIA ADA
+                            </h4>
+                            <p class="text-xs text-amber-900/90 mt-1 leading-relaxed">
+                                Sistem ini telah dibina secara modular untuk menggabungkan peratus kehadiran dengan markah <strong>Penilaian Berterusan (PB)</strong> seperti Kuiz, Ujian, Amali, dan Tugasan untuk analisis korelasi prestasi pelajar.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kad Jadual Bersepadu Kehadiran + Penilaian Berterusan (PB) -->
+                <div class="lg:col-span-7 card-3d-green overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-4 text-white flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-graduation-cap text-yellow-300 text-xl"></i>
+                            <div>
+                                <h3 class="font-display font-bold text-lg uppercase">ANALISIS BERSEPADU: KEHADIRAN & MARKAH PB</h3>
+                                <p class="text-xs text-green-100">Paparan kelas semasa: <span id="spmpClassLabel" class="font-bold underline">DKA1A</span> (Klik markah PB untuk kemaskini)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-green-50 border-b-2 border-green-200 text-green-950 text-xs font-extrabold uppercase">
+                                    <th class="py-3 px-4">No. Pend.</th>
+                                    <th class="py-3 px-4">Nama Pelajar</th>
+                                    <th class="py-3 px-4">Kelas</th>
+                                    <th class="py-3 px-4 text-center">% Hadir</th>
+                                    <th class="py-3 px-4 text-center">Kuiz/Ujian (40%)</th>
+                                    <th class="py-3 px-4 text-center">Amali/Projek (60%)</th>
+                                    <th class="py-3 px-4 text-center">Jumlah PB</th>
+                                </tr>
+                            </thead>
+                            <tbody id="spmpIntegratedTableBody" class="divide-y divide-slate-200 text-sm">
+                                <!-- Diisi oleh JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- NOTA PENTING FOOTER (Diinspirasikan dari bahagian bawah poster rujukan) -->
+    <footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pb-8">
+        <div class="card-3d-yellow p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center text-xl font-bold shrink-0 shadow">
+                    !
+                </div>
+                <div>
+                    <span class="font-display font-bold text-red-700 text-sm uppercase tracking-wide">NOTA PENTING PENSYARAH:</span>
+                    <p class="text-xs text-slate-800 font-medium">
+                        Kod QR & pautan akan bertukar automatik setiap <strong>5 minit</strong>. Pelajar mempunyai masa <strong>3 minit</strong> selepas imbasan untuk melengkapkan borang. Eksport data ke Google Sheets untuk arkib folder rasmi.
+                    </p>
+                </div>
+            </div>
+            <div class="text-right shrink-0">
+                <p class="font-display font-bold text-blue-900 text-sm italic">"Bersama Kita Jayakan Kecemerlangan!"</p>
+                <p class="text-[11px] font-bold text-slate-500">Politeknik Port Dickson • Negeri Sembilan</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 5: PENGESAHAN KATA LALUAN ADMIN (admin2026)                         -->
+    <!-- ========================================================================= -->
+    <div id="modalAdminAuth" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="card-3d-blue max-w-sm w-full overflow-hidden">
+            <div class="bg-gradient-to-r from-blue-800 to-blue-600 p-4 text-white flex items-center justify-between">
+                <h3 class="font-display font-bold text-lg uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-yellow-300"></i> Akses Admin Sahaja
+                </h3>
+                <button onclick="closeModal('modalAdminAuth')" class="text-white hover:text-blue-200 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="verifyAdminPassword(event)" class="p-6 space-y-4">
+                <div class="text-center">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 border-2 border-amber-300 flex items-center justify-center text-2xl mx-auto mb-2">
+                        <i class="fa-solid fa-key"></i>
+                    </div>
+                    <p class="text-xs text-slate-600 font-semibold">Paparan analisis kehadiran dan markah SPMP hanya dibenarkan untuk pensyarah / pentadbir.</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Masukkan Kata Laluan Admin</label>
+                    <input type="password" id="adminPasswordInput" required placeholder="•••••••••" class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-blue-600 font-bold text-center text-lg tracking-widest">
+                </div>
+                <button type="submit" class="btn-3d w-full bg-blue-600 hover:bg-blue-700 text-white font-display font-bold py-3 rounded-xl shadow-[0_4px_0_#1e3a8a] cursor-pointer">
+                    BUKA DASHBOARD ANALISIS
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 3: PANDUAN INTEGRASI FOLDER GOOGLE DRIVE & GOOGLE SHEETS            -->
+    <!-- ========================================================================= -->
+    <div id="modalGDrive" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="card-3d-green max-w-lg w-full overflow-hidden">
+            <div class="bg-green-600 p-4 text-white flex items-center justify-between">
+                <h3 class="font-display font-bold text-lg uppercase flex items-center gap-2">
+                    <i class="fa-brands fa-google-drive text-yellow-300"></i> Penyimpanan Google Sheets & Drive
+                </h3>
+                <button onclick="closeModal('modalGDrive')" class="text-white hover:text-green-200 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4 text-sm">
+                <p class="text-slate-700 font-medium">Semua rekod kehadiran dieksport dalam satu fail Google Sheets dengan <strong>tab helaian (sheet tabs) berasingan mengikut kelas</strong> yang anda tetapkan:</p>
+                <div class="bg-slate-900 text-emerald-300 p-4 rounded-2xl font-mono text-xs space-y-1.5 shadow-inner">
+                    <div><i class="fa-solid fa-folder-open text-yellow-400"></i> Google Drive / REKOD_KEHADIRAN_POLIPD/</div>
+                    <div class="pl-4"><i class="fa-solid fa-folder text-yellow-400"></i> <span id="folderSesiPreview">SESI_1_2026_2027</span>/</div>
+                    <div class="pl-8 text-white"><i class="fa-solid fa-table text-green-400"></i> Rekod_Kehadiran_Semua_Kelas.xlsx (Google Sheets)</div>
+                    <div id="driveClassTabsPreview" class="pl-12 text-blue-300 space-y-0.5">
+                        <!-- Diisi secara dinamik mengikut kelas yang diisytiharkan -->
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="exportToGoogleSheetsMultiTab(); closeModal('modalGDrive');" class="btn-3d flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow-[0_4px_0_#14532d] cursor-pointer">
+                        Muat Turun Fail Google Sheets (Berbilang Tab) Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: TETAPAN SESI PENGAJIAN & SENARAI KELAS SEMESTER (ADMIN)          -->
+    <!-- ========================================================================= -->
+    <div id="modalSesi" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="card-3d-blue max-w-lg w-full overflow-hidden my-4">
+            <div class="bg-blue-700 p-4 text-white flex items-center justify-between">
+                <h3 class="font-display font-bold text-lg uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-check text-yellow-300"></i> Tetapan Sesi & Senarai Kelas
+                </h3>
+                <button onclick="closeModal('modalSesi')" class="text-white hover:text-blue-200 cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Sesi Pengajian Semasa</label>
+                        <input type="text" id="inputSesiName" value="SESI 1 : 2026/2027" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-600 font-display font-bold text-sm text-blue-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-600 uppercase mb-1">Nama Pensyarah Kursus</label>
+                        <input type="text" id="inputLecturerName" value="TS. MOHD HAFIZ BIN RAHMAN" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-600 font-bold text-sm text-slate-800">
+                    </div>
+                </div>
+
+                <!-- Pengurusan Senarai & Bilangan Kelas Semester Ini -->
+                <div class="bg-blue-50/80 border-2 border-blue-200 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-extrabold text-blue-950 uppercase">Senarai Kelas Diajar Semester Ini</label>
+                        <span id="declaredClassCountBadge" class="bg-blue-600 text-white text-[11px] font-extrabold px-2.5 py-0.5 rounded-full">4 Kelas</span>
+                    </div>
+
+                    <!-- Tambah Kelas Baharu -->
+                    <div class="grid grid-cols-12 gap-2">
+                        <input type="text" id="newClassCodeInput" placeholder="Kod Kelas (cth: DKA4A)" class="col-span-5 px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-xs font-bold uppercase">
+                        <input type="text" id="newClassProgramInput" placeholder="Program (cth: Kejuruteraan Awam)" class="col-span-5 px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-xs font-semibold">
+                        <button type="button" onclick="addDeclaredClass()" class="col-span-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center cursor-pointer" title="Tambah Kelas">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+
+                    <!-- Senarai Kelas Semasa (Boleh ubah nama & padam) -->
+                    <div id="declaredClassesListContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        <!-- Diisi oleh JavaScript -->
+                    </div>
+                    <p class="text-[11px] text-slate-500">Setiap kelas yang diisytiharkan di sini akan dijana sebagai <strong>Tab berasingan</strong> dalam Google Sheets.</p>
+                </div>
+
+                <button onclick="saveSessionSettings()" class="btn-3d w-full bg-blue-600 hover:bg-blue-700 text-white font-display font-bold py-3 rounded-xl shadow-[0_4px_0_#1e3a8a] cursor-pointer">
+                    SIMPAN TETAPAN SESI & KELAS
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: BORANG PENGISIAN KEHADIRAN PELAJAR (HAD MASA 3 MINIT)            -->
+    <!-- ========================================================================= -->
+    <div id="modalStudentForm" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="card-3d-green max-w-lg w-full overflow-hidden my-4">
+            <div class="bg-gradient-to-r from-green-600 to-emerald-500 p-4 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-white text-green-700 flex items-center justify-center font-bold shadow">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-base sm:text-lg uppercase leading-tight">PENGESAHAN KEHADIRAN PELAJAR</h3>
+                        <p class="text-[11px] text-green-100" id="formHeaderMeta">SESI 1 : 2026/2027 • DKA1A</p>
+                    </div>
+                </div>
+                <button id="btnCloseStudentModal" onclick="closeStudentScanForm()" class="text-white hover:text-green-200 cursor-pointer"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <!-- Bar Pemasa 3 Minit -->
+            <div id="studentTimerBar" class="bg-red-50 border-b-2 border-red-200 px-5 py-2.5 flex items-center justify-between">
+                <span class="text-xs font-extrabold text-red-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-hourglass-half animate-pulse"></i> Tempoh Pengisian Borang (3 Minit):
+                </span>
+                <span id="studentFormTimerDisplay" class="font-display font-bold text-base text-red-700 bg-white px-3 py-0.5 rounded-lg border border-red-300 shadow-sm">03:00</span>
+            </div>
+
+            <!-- Borang Utama Pelajar -->
+            <form id="studentAttendanceForm" onsubmit="submitStudentAttendance(event)" class="p-5 space-y-3.5 bg-white">
+                <!-- Pilihan Mod: Rekod Diri Sendiri vs Rekod Orang Lain -->
+                <div class="bg-blue-50/80 p-3 rounded-2xl border-2 border-blue-200">
+                    <label class="block text-[11px] font-extrabold text-blue-900 uppercase mb-2">Pilihan Jenis Pengisian:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="entryMode" value="self" checked class="peer sr-only" onchange="handleEntryModeChange()">
+                            <div class="p-2.5 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white text-center text-xs font-extrabold transition">
+                                <i class="fa-solid fa-user mr-1"></i> Rekod Diri Sendiri
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="entryMode" value="friend" class="peer sr-only" onchange="handleEntryModeChange()">
+                            <div class="p-2.5 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-amber-500 peer-checked:bg-amber-500 peer-checked:text-white text-center text-xs font-extrabold transition">
+                                <i class="fa-solid fa-user-group mr-1"></i> Rekod Orang Lain
+                            </div>
+                        </label>
+                    </div>
+                    <p id="entryModeHint" class="text-[11px] text-blue-800 font-semibold mt-1.5">
+                        <i class="fa-solid fa-circle-info mr-1"></i> Setiap telefon hanya dibenarkan merekod <strong>diri sendiri 1 kali</strong> bagi waktu kelas ini.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">No. Pendaftaran (ID Unik 1) *</label>
+                        <input type="text" id="stuRegNo" required placeholder="Cth: 06DKA26F1001" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-green-600 font-bold text-sm uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">No. Telefon (ID Unik 2) *</label>
+                        <input type="tel" id="stuPhone" required placeholder="Cth: 012-3456789" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-green-600 font-bold text-sm">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Nama Penuh Pelajar *</label>
+                    <input type="text" id="stuName" required placeholder="Seperti dalam kad pelajar / SPMP" class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-green-600 font-bold text-sm uppercase">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Kelas *</label>
+                        <select id="stuClass" required class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-green-600 font-bold text-sm bg-slate-50">
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Masa Kelas</label>
+                        <input type="text" id="stuClassTime" readonly class="w-full px-3.5 py-2.5 rounded-xl border-2 border-slate-200 bg-slate-100 font-bold text-xs text-slate-600">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-3d w-full bg-green-600 hover:bg-green-700 text-white font-display font-bold text-base py-3 rounded-xl shadow-[0_4px_0_#14532d] flex items-center justify-center gap-2 cursor-pointer mt-2">
+                    <i class="fa-solid fa-paper-plane"></i> HANTAR KEHADIRAN SEKARANG
+                </button>
+            </form>
+
+            <!-- Skrin Notifikasi Berjaya Selepas Hantar -->
+            <div id="studentSuccessScreen" class="hidden p-6 text-center bg-white space-y-4">
+                <div class="w-20 h-20 rounded-full bg-green-100 text-green-600 border-4 border-green-500 flex items-center justify-center text-4xl mx-auto shadow-md">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <div>
+                    <h4 class="font-display font-bold text-2xl text-green-700 uppercase">KEHADIRAN TELAH DIREKODKAN!</h4>
+                    <p class="text-xs text-slate-500 mt-1">Maklumat anda telah berjaya disimpan ke dalam sistem kehadiran.</p>
+                </div>
+                <div class="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 text-left text-xs space-y-1.5" id="successReceiptDetails"></div>
+                <div class="pt-2 flex flex-col sm:flex-row gap-2">
+                    <button onclick="switchToFriendModeAfterSuccess()" class="btn-3d flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-[0_4px_0_#b45309] cursor-pointer">
+                        <i class="fa-solid fa-user-plus mr-1"></i> Rekod Orang Lain (Kawan)
+                    </button>
+                    <button onclick="closeStudentScanForm()" class="btn-3d flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-[0_4px_0_#0f172a] cursor-pointer">
+                        Selesai & Tutup
+                    </button>
+                </div>
+            </div>
+
+            <!-- Skrin Tamat Tempoh (3 Minit Berakhir) -->
+            <div id="studentExpiredScreen" class="hidden p-6 text-center bg-white space-y-4">
+                <div class="w-20 h-20 rounded-full bg-red-100 text-red-600 border-4 border-red-500 flex items-center justify-center text-4xl mx-auto">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div>
+                    <h4 class="font-display font-bold text-xl text-red-700 uppercase">MASA PENGISIAN TAMAT (3 MINIT)</h4>
+                    <p class="text-xs text-slate-600 mt-1">Tempoh 3 minit telah tamat. Sila imbas semula Kod QR terkini di hadapan kelas.</p>
+                </div>
+                <button onclick="closeStudentScanForm()" class="btn-3d w-full bg-red-600 text-white font-bold text-xs py-3 rounded-xl shadow-[0_4px_0_#991b1b] cursor-pointer">
+                    Tutup & Imbas Semula
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 4: PAPARAN SKRIN PENUH QR (PROJEKTOR / PELAJAR SAHAJA)              -->
+    <!-- ========================================================================= -->
+    <div id="modalProjector" class="fixed inset-0 bg-blue-950/95 backdrop-blur-md z-50 hidden flex-col items-center justify-center p-6 text-white">
+        <button onclick="closeModal('modalProjector')" class="absolute top-6 right-6 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-xmark"></i> Tutup Skrin Penuh
+        </button>
+        <div class="max-w-md w-full text-center space-y-5">
+            <span class="pill-red-3d px-5 py-1.5 rounded-full font-display font-bold text-sm uppercase tracking-wider inline-block" id="projSesi">SESI 1 : 2026/2027</span>
+            <h2 class="font-display font-bold text-3xl text-stroke-yellow uppercase">IMBAS KOD QR KEHADIRAN</h2>
+            <p class="text-sm font-bold text-blue-200" id="projSubtitle">DKA1A • Kelas Semasa • F2F (Bersemuka)</p>
+            <div class="bg-white p-6 rounded-3xl inline-block shadow-2xl border-4 border-yellow-400">
+                <div id="projectorQrCanvas" class="flex items-center justify-center"></div>
+            </div>
+            <p class="text-xs text-blue-200 bg-blue-900/70 p-3 rounded-xl border border-blue-700">
+                Kod QR dikemas kini automatik setiap <strong>5 minit</strong>. Tempoh isian borang adalah <strong>3 minit</strong>.
+            </p>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- JAVASCRIPT LOGIK SISTEM                                                   -->
+    <!-- ========================================================================= -->
+    <script>
+        // 1. STATE & DATA SIMULASI AWAL (SPMP + REKOD KEHADIRAN)
+        let currentSession = "SESI 1 : 2026/2027";
+        let lecturerName = "TS. MOHD HAFIZ BIN RAHMAN";
+        let isAdminAuthenticated = false;
+        let pendingAdminTab = null;
+        let qrTimerSeconds = 300; // 5 minit = 300 saat
+        let qrInterval = null;
+        let studentFormSeconds = 180; // 3 minit = 180 saat
+        let studentFormInterval = null;
+        let currentSecurityToken = "";
+        let trendChartInstance = null;
+        let typeChartInstance = null;
+        let deviceSelfSubmittedSlots = new Set();
+
+        // Senarai Kelas yang Diajar pada Semester Ini (Boleh diubah suai oleh Admin)
+        let declaredClasses = [
+            { code: "DKA1A", program: "Kejuruteraan Awam" },
+            { code: "DKA2B", program: "Kejuruteraan Awam" },
+            { code: "DKA3A", program: "Kejuruteraan Awam" },
+            { code: "DUB1A", program: "Ukur Bahan" }
+        ];
+
+        // Senarai Pelajar Asal dari SPMP
+        let spmpStudents = [
+            { regNo: "06DKA26F1001", name: "AHMAD SYAHMI BIN ZULKIFLI", kelas: "DKA1A", phone: "012-3456781", quiz: 34, practical: 52 },
+            { regNo: "06DKA26F1002", name: "NURUL IZZAH BINTI MOHD RADZI", kelas: "DKA1A", phone: "013-7891234", quiz: 38, practical: 56 },
+            { regNo: "06DKA26F1003", name: "MUHAMMAD DANISH BIN AZMAN", kelas: "DKA1A", phone: "011-23456789", quiz: 26, practical: 44 },
+            { regNo: "06DKA26F1004", name: "SITI AISYAH BINTI KAMARUDIN", kelas: "DKA1A", phone: "017-6543210", quiz: 36, practical: 54 },
+            { regNo: "06DKA26F1005", name: "KAVINASH A/L SUBRAMANIAM", kelas: "DKA1A", phone: "016-9988776", quiz: 32, practical: 50 },
+            { regNo: "06DKA26F2011", name: "NUR FATIN NABILAH BINTI ROSLAN", kelas: "DKA2B", phone: "019-4433221", quiz: 35, practical: 55 },
+            { regNo: "06DKA26F2012", name: "WAN MUHAMMAD HARITH BIN WAN ALI", kelas: "DKA2B", phone: "014-5566778", quiz: 29, practical: 48 },
+            { regNo: "06DKA26F3005", name: "CHONG WEI MING", kelas: "DKA3A", phone: "012-8877665", quiz: 37, practical: 57 },
+            { regNo: "06DUB26F1008", name: "PUTERI BALQIS BINTI HASSAN", kelas: "DUB1A", phone: "018-2233445", quiz: 33, practical: 51 }
+        ];
+
+        // Rekod Kehadiran Semasa
+        const todayStr = new Date().toISOString().split('T')[0];
+        let attendanceRecords = [
+            { regNo: "06DKA26F1001", name: "AHMAD SYAHMI BIN ZULKIFLI", kelas: "DKA1A", phone: "012-3456781", date: todayStr, timeSlot: "02:00 PM - 04:00 PM", type: "Kelas Semasa", location: "F2F (Bersemuka)", scanTime: "14:01:12", entryMode: "self" },
+            { regNo: "06DKA26F1002", name: "NURUL IZZAH BINTI MOHD RADZI", kelas: "DKA1A", phone: "013-7891234", date: todayStr, timeSlot: "02:00 PM - 04:00 PM", type: "Kelas Semasa", location: "F2F (Bersemuka)", scanTime: "14:02:05", entryMode: "self" },
+            { regNo: "06DKA26F1004", name: "SITI AISYAH BINTI KAMARUDIN", kelas: "DKA1A", phone: "017-6543210", date: todayStr, timeSlot: "02:00 PM - 04:00 PM", type: "Kelas Semasa", location: "F2F (Bersemuka)", scanTime: "14:03:44", entryMode: "self" },
+            { regNo: "06DKA26F1001", name: "AHMAD SYAHMI BIN ZULKIFLI", kelas: "DKA1A", phone: "012-3456781", date: "2026-11-10", timeSlot: "10:00 AM - 12:00 PM", type: "Kelas Ganti", location: "Online (MS Teams / CIDOS)", scanTime: "10:04:19", entryMode: "self" },
+            { regNo: "06DKA26F1002", name: "NURUL IZZAH BINTI MOHD RADZI", kelas: "DKA1A", phone: "013-7891234", date: "2026-11-10", timeSlot: "10:00 AM - 12:00 PM", type: "Kelas Ganti", location: "Online (MS Teams / CIDOS)", scanTime: "10:05:30", entryMode: "self" },
+            { regNo: "06DKA26F2011", name: "NUR FATIN NABILAH BINTI ROSLAN", kelas: "DKA2B", phone: "019-4433221", date: todayStr, timeSlot: "08:00 AM - 10:00 AM", type: "Kelas Semasa", location: "F2F (Bersemuka)", scanTime: "08:02:11", entryMode: "self" }
+        ];
+
+        // 2. INISIALISASI HALAMAN
+        window.onload = function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('meetingDate').value = today;
+
+            // Semak jika URL dibuka dalam mod pelajar (?mode=student)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('mode') === 'student') {
+                const pClass = urlParams.get('kelas') || 'DKA1A';
+                const pType = urlParams.get('jenis') || 'Kelas Semasa';
+                const pTime = urlParams.get('masa') || '02:00 PM - 04:00 PM';
+                const pDate = urlParams.get('tarikh') || today;
+                const pLoc = urlParams.get('lokasi') || 'F2F (Bersemuka)';
+                if (!declaredClasses.some(c => c.code === pClass)) {
+                    declaredClasses.push({ code: pClass, program: 'Program Akademik' });
+                }
+                syncAllClassDropdowns(pClass);
+                document.getElementById('meetingClass').value = pClass;
+                document.getElementById('meetingDate').value = pDate;
+                document.getElementById('meetingTime').value = pTime;
+                document.getElementById('meetingLocation').value = pLoc;
+                document.querySelectorAll('input[name="meetingType"]').forEach(r => {
+                    if (r.value === pType) r.checked = true;
+                });
+                document.querySelector('header').classList.add('hidden');
+                document.querySelector('nav').classList.add('hidden');
+                document.querySelector('main').classList.add('hidden');
+                document.querySelector('footer').classList.add('hidden');
+                openStudentScanForm(true);
+                return;
+            }
+
+            syncAllClassDropdowns('DKA1A');
+            updateMeetingPreview();
+            generateDynamicQR(false);
+            startQRCountdown();
+            renderLiveFeed();
+            renderDashboard();
+            renderSPMPTable();
+        };
+
+        // 2B. PENYELARASAN & PENGURUSAN SENARAI KELAS SEMESTER (ADMIN)
+        function syncAllClassDropdowns(preferredClass = null) {
+            const defaultClass = preferredClass || (declaredClasses[0] ? declaredClasses[0].code : 'DKA1A');
+
+            // 1. Global Class Filter (Header Admin)
+            const globalSel = document.getElementById('globalClassFilter');
+            const prevGlobal = globalSel.value;
+            globalSel.innerHTML = `<option value="SEMUA">SEMUA KELAS (KESELURUHAN)</option>` +
+                declaredClasses.map(c => `<option value="${c.code}">KELAS ${c.code} (${c.program.toUpperCase()})</option>`).join('');
+            globalSel.value = (prevGlobal === 'SEMUA' || declaredClasses.some(c => c.code === prevGlobal)) ? prevGlobal : defaultClass;
+
+            // 2. Meeting Class Select
+            const meetSel = document.getElementById('meetingClass');
+            const prevMeet = meetSel.value;
+            meetSel.innerHTML = declaredClasses.map(c => `<option value="${c.code}">${c.code} - ${c.program}</option>`).join('');
+            meetSel.value = declaredClasses.some(c => c.code === prevMeet) ? prevMeet : defaultClass;
+
+            // 3. Dashboard Filter Select
+            const dashSel = document.getElementById('dashFilterClass');
+            const prevDash = dashSel.value;
+            dashSel.innerHTML = `<option value="SEMUA">Semua Kelas</option>` +
+                declaredClasses.map(c => `<option value="${c.code}">${c.code}</option>`).join('');
+            dashSel.value = (prevDash === 'SEMUA' || declaredClasses.some(c => c.code === prevDash)) ? prevDash : defaultClass;
+
+            // 4. Student Form Class Select
+            const stuSel = document.getElementById('stuClass');
+            stuSel.innerHTML = declaredClasses.map(c => `<option value="${c.code}">${c.code}</option>`).join('');
+
+            // 5. Kemas kini pratonton tab dalam modal Google Drive
+            const driveTabsEl = document.getElementById('driveClassTabsPreview');
+            if (driveTabsEl) {
+                driveTabsEl.innerHTML = declaredClasses.map(c =>
+                    `<div><i class="fa-solid fa-file-lines text-emerald-400"></i> Tab: [${c.code}]</div>`
+                ).join('') + `<div><i class="fa-solid fa-file-lines text-yellow-300"></i> Tab: [SEMUA_KELAS]</div>`;
+            }
+        }
+
+        function openSesiAndClassModal() {
+            document.getElementById('inputSesiName').value = currentSession;
+            document.getElementById('inputLecturerName').value = lecturerName;
+            renderDeclaredClassesModalList();
+            openModal('modalSesi');
+        }
+
+        function renderDeclaredClassesModalList() {
+            const container = document.getElementById('declaredClassesListContainer');
+            const badge = document.getElementById('declaredClassCountBadge');
+            badge.textContent = `${declaredClasses.length} Kelas`;
+
+            container.innerHTML = declaredClasses.map((cls, idx) => `
+                <div class="flex items-center gap-2 bg-white p-2 rounded-xl border border-blue-200">
+                    <span class="w-6 h-6 rounded-lg bg-blue-100 text-blue-800 font-bold text-xs flex items-center justify-center shrink-0">${idx + 1}</span>
+                    <input type="text" value="${cls.code}" onchange="updateDeclaredClassField(${idx}, 'code', this.value)" class="w-24 px-2 py-1 rounded-lg border border-slate-200 font-bold text-xs text-blue-950 uppercase">
+                    <input type="text" value="${cls.program}" onchange="updateDeclaredClassField(${idx}, 'program', this.value)" class="flex-1 px-2 py-1 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700">
+                    <button type="button" onclick="removeDeclaredClass(${idx})" class="text-red-500 hover:text-red-700 px-2 py-1 text-xs cursor-pointer" title="Padam Kelas">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addDeclaredClass() {
+            const codeInput = document.getElementById('newClassCodeInput');
+            const progInput = document.getElementById('newClassProgramInput');
+            const code = codeInput.value.trim().toUpperCase();
+            const program = progInput.value.trim() || 'Program Akademik';
+
+            if (!code) {
+                showToast('Kod Kelas Diperlukan', 'Sila masukkan nama/kod kelas seperti DKA4A.', 'error');
+                return;
+            }
+            if (declaredClasses.some(c => c.code === code)) {
+                showToast('Kelas Sudah Wujud', `Kelas ${code} sudah ada dalam senarai semester ini.`, 'error');
+                return;
+            }
+
+            declaredClasses.push({ code, program });
+            codeInput.value = '';
+            progInput.value = '';
+            renderDeclaredClassesModalList();
+        }
+
+        function updateDeclaredClassField(index, field, value) {
+            if (!declaredClasses[index]) return;
+            const cleanVal = field === 'code' ? value.trim().toUpperCase() : value.trim();
+            if (!cleanVal) return;
+
+            const oldCode = declaredClasses[index].code;
+            declaredClasses[index][field] = cleanVal;
+
+            // Selaraskan rekod sedia ada jika kod kelas diubah suai
+            if (field === 'code' && oldCode !== cleanVal) {
+                attendanceRecords.forEach(r => { if (r.kelas === oldCode) r.kelas = cleanVal; });
+                spmpStudents.forEach(s => { if (s.kelas === oldCode) s.kelas = cleanVal; });
+            }
+        }
+
+        function removeDeclaredClass(index) {
+            if (declaredClasses.length <= 1) {
+                showToast('Minimum 1 Kelas', 'Sekurang-kurangnya satu kelas mesti dikekalkan.', 'error');
+                return;
+            }
+            declaredClasses.splice(index, 1);
+            renderDeclaredClassesModalList();
+        }
+
+            updateMeetingPreview();
+            generateDynamicQR(false);
+            startQRCountdown();
+            renderLiveFeed();
+            renderDashboard();
+            renderSPMPTable();
+        };
+
+        // 3. PENJANAAN KOD QR DINAMIK (AUTO-TUKAR SETIAP 5 MINIT)
+        function generateDynamicQR(manualNotify = false) {
+            const kelas = document.getElementById('meetingClass').value;
+            const date = document.getElementById('meetingDate').value;
+            const time = document.getElementById('meetingTime').value;
+            const location = document.getElementById('meetingLocation').value;
+            const type = document.querySelector('input[name="meetingType"]:checked')?.value || 'Kelas Semasa';
+
+            // Jana token keselamatan rawak baharu
+            currentSecurityToken = 'PPD-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+            // Bina pautan ringkas & sah supaya QRCode.js sentiasa dapat melukis dengan jelas
+            let baseUrl = window.location.href.split('?')[0];
+            if (!baseUrl.startsWith('http')) {
+                baseUrl = 'https://kehadiran.polipd.edu.my/scan';
+            }
+            const dynamicUrl = `${baseUrl}?mode=student&t=${currentSecurityToken}&kelas=${encodeURIComponent(kelas)}&tarikh=${encodeURIComponent(date)}&masa=${encodeURIComponent(time)}&jenis=${encodeURIComponent(type)}&lokasi=${encodeURIComponent(location)}`;
+
+            const linkInput = document.getElementById('dynamicLinkInput');
+            if (linkInput) linkInput.value = dynamicUrl;
+
+            // Lukis Kod QR Utama
+            renderQRCodeToElement('qrcodeCanvas', dynamicUrl, 200);
+            // Lukis Kod QR Skrin Penuh Projektor
+            renderQRCodeToElement('projectorQrCanvas', dynamicUrl, 260);
+
+            document.getElementById('projSesi').textContent = currentSession;
+            document.getElementById('projSubtitle').textContent = `${kelas} • ${type} • ${location}`;
+
+            qrTimerSeconds = 300;
+            if (manualNotify) {
+                showToast('Kod QR Dikemas Kini', `Kod QR baharu untuk kelas ${kelas} telah dijana.`, 'success');
+            }
+        }
+
+        function renderQRCodeToElement(elementId, textValue, sizePx) {
+            const container = document.getElementById(elementId);
+            if (!container) return;
+            container.innerHTML = '';
+            try {
+                if (typeof QRCode !== 'undefined') {
+                    new QRCode(container, {
+                        text: textValue,
+                        width: sizePx,
+                        height: sizePx,
+                        colorDark: "#0f172a",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.L
+                    });
+                } else {
+                    throw new Error("QRCode library not loaded");
+                }
+            } catch (err) {
+                // Sandaran SVG jika library luar disekat
+                container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=${sizePx}x${sizePx}&data=${encodeURIComponent(textValue)}" alt="Kod QR Kehadiran" class="rounded-xl w-[${sizePx}px] h-[${sizePx}px]">`;
+            }
+        }
+
+        function startQRCountdown() {
+            if (qrInterval) clearInterval(qrInterval);
+            qrInterval = setInterval(() => {
+                qrTimerSeconds--;
+                if (qrTimerSeconds <= 0) {
+                    generateDynamicQR(false);
+                }
+            }, 1000);
+        }
+
+        function copyDynamicLink() {
+            const input = document.getElementById('dynamicLinkInput');
+            input.select();
+            input.setSelectionRange(0, 99999);
+            document.execCommand('copy');
+            showToast('Pautan Disalin', 'Pautan borang kehadiran semasa telah disalin.', 'info');
+        }
+
+        function openProjectorView() {
+            generateDynamicQR(false);
+            const modal = document.getElementById('modalProjector');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // 4. PENJANAAN KOD QR DINAMIK (AUTO-TUKAR SETIAP 5 MINIT)
+        function handleSesiBadgeClick() {
+            if (isAdminAuthenticated) {
+                openSesiAndClassModal();
+            } else {
+                requestAdminTab('stay');
+            }
+        }
+
+        function requestAdminTab(targetTabId) {
+            if (isAdminAuthenticated) {
+                if (targetTabId && targetTabId !== 'stay') {
+                    switchTab(targetTabId);
+                }
+            } else {
+                pendingAdminTab = targetTabId;
+                document.getElementById('adminPasswordInput').value = '';
+                openModal('modalAdminAuth');
+                setTimeout(() => document.getElementById('adminPasswordInput').focus(), 100);
+            }
+        }
+
+        function applyAdminUIState(unlocked) {
+            const adminNav = document.getElementById('adminNavBar');
+            const adminClassBox = document.getElementById('adminGlobalClassBox');
+            const btnAdminLogin = document.getElementById('btnHeaderAdminLogin');
+            const btnToggleSetup = document.getElementById('btnAdminToggleSetup');
+            const adminQrTools = document.getElementById('adminQrTools');
+            const sesiEditIcon = document.getElementById('sesiEditIcon');
+
+            if (unlocked) {
+                adminNav.classList.remove('hidden');
+                adminClassBox.classList.remove('hidden');
+                adminClassBox.classList.add('flex');
+                btnAdminLogin.classList.add('hidden');
+                btnToggleSetup.classList.remove('hidden');
+                btnToggleSetup.classList.add('flex');
+                adminQrTools.classList.remove('hidden');
+                sesiEditIcon.classList.remove('hidden');
+            } else {
+                adminNav.classList.add('hidden');
+                adminClassBox.classList.add('hidden');
+                adminClassBox.classList.remove('flex');
+                btnAdminLogin.classList.remove('hidden');
+                btnToggleSetup.classList.add('hidden');
+                btnToggleSetup.classList.remove('flex');
+                adminQrTools.classList.add('hidden');
+                sesiEditIcon.classList.add('hidden');
+                document.getElementById('meetingSetupPanel').classList.add('hidden');
+                document.getElementById('btnToggleSetupText').textContent = 'Ubah Tetapan Kelas';
+            }
+        }
+
+        function verifyAdminPassword(e) {
+            e.preventDefault();
+            const pwd = document.getElementById('adminPasswordInput').value.trim();
+            if (pwd === 'admin2026') {
+                isAdminAuthenticated = true;
+                closeModal('modalAdminAuth');
+                applyAdminUIState(true);
+                showToast('Akses Admin Dibenarkan', 'Semua kawalan pensyarah & dashboard analisis telah dibuka.', 'success');
+                if (pendingAdminTab && pendingAdminTab !== 'stay') {
+                    switchTab(pendingAdminTab);
+                }
+                pendingAdminTab = null;
+            } else {
+                showToast('Kata Laluan Salah!', 'Sila masukkan kata laluan pentadbir yang sah.', 'error');
+                document.getElementById('adminPasswordInput').value = '';
+                document.getElementById('adminPasswordInput').focus();
+            }
+        }
+
+        function lockAdminMode() {
+            isAdminAuthenticated = false;
+            applyAdminUIState(false);
+            switchTab('tab-qr');
+            showToast('Mod Admin Dikunci', 'Paparan telah kembali ke mod pelajar.', 'info');
+        }
+
+        function switchTab(tabId) {
+            if ((tabId === 'tab-dashboard' || tabId === 'tab-spmp') && !isAdminAuthenticated) {
+                requestAdminTab(tabId);
+                return;
+            }
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                btn.classList.add('text-slate-600', 'hover:bg-blue-50');
+            });
+
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-600', 'hover:bg-blue-50');
+                activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+            }
+
+            if (tabId === 'tab-dashboard') {
+                renderDashboard();
+            } else if (tabId === 'tab-spmp') {
+                renderSPMPTable();
+            }
+        }
+
+        function toggleMeetingSetupPanel() {
+            const panel = document.getElementById('meetingSetupPanel');
+            const btnText = document.getElementById('btnToggleSetupText');
+            const isHidden = panel.classList.contains('hidden');
+            if (isHidden) {
+                panel.classList.remove('hidden');
+                btnText.textContent = 'Tutup Tetapan';
+            } else {
+                panel.classList.add('hidden');
+                btnText.textContent = 'Ubah Tetapan Kelas';
+            }
+        }
+
+        function updateMeetingPreview() {
+            const kelas = document.getElementById('meetingClass').value;
+            const course = document.getElementById('meetingCourse').value;
+            const date = document.getElementById('meetingDate').value;
+            const time = document.getElementById('meetingTime').value;
+            const location = document.getElementById('meetingLocation').value;
+            const room = document.getElementById('meetingRoom').value;
+            const notes = document.getElementById('meetingNotes').value;
+            const type = document.querySelector('input[name="meetingType"]:checked')?.value || 'Kelas Semasa';
+
+            document.getElementById('topDisplayClass').textContent = kelas;
+            document.getElementById('topDisplayCourse').textContent = course.split('-')[0].trim();
+            document.getElementById('topDisplayDate').textContent = date;
+            document.getElementById('topDisplayNotes').textContent = notes || 'Sesi Kuliah';
+            document.getElementById('topDisplayTime').textContent = time;
+            document.getElementById('topDisplayLocation').textContent = location.split('(')[0].trim();
+            document.getElementById('topDisplayRoom').textContent = room || '-';
+            document.getElementById('topDisplayType').textContent = type;
+
+            const locIcon = document.getElementById('topLocationIcon');
+            if (location.toLowerCase().includes('online')) {
+                locIcon.className = 'fa-solid fa-laptop-house';
+            } else {
+                locIcon.className = 'fa-solid fa-building-columns';
+            }
+            renderLiveFeed();
+        }
+
+        function syncClassFromMeeting() {
+            const selected = document.getElementById('meetingClass').value;
+            document.getElementById('globalClassFilter').value = selected;
+            document.getElementById('dashFilterClass').value = selected;
+            updateMeetingPreview();
+            generateDynamicQR(false);
+        }
+
+        function handleGlobalClassChange() {
+            const selected = document.getElementById('globalClassFilter').value;
+            document.getElementById('dashFilterClass').value = selected;
+            if (selected !== 'SEMUA') {
+                document.getElementById('meetingClass').value = selected;
+                updateMeetingPreview();
+                generateDynamicQR(false);
+            }
+            renderLiveFeed();
+            renderDashboard();
+            renderSPMPTable();
+        }
+
+        function syncFromDashFilter() {
+            const selected = document.getElementById('dashFilterClass').value;
+            document.getElementById('globalClassFilter').value = selected;
+            renderDashboard();
+            renderSPMPTable();
+        }
+
+        function saveSessionSettings() {
+            const newSesi = document.getElementById('inputSesiName').value.trim();
+            const newLect = document.getElementById('inputLecturerName').value.trim();
+            if (newSesi) {
+                currentSession = newSesi.toUpperCase();
+                document.getElementById('displaySesi').textContent = currentSession;
+                document.getElementById('folderSesiPreview').textContent = currentSession.replace(/[^A-Z0-9]/gi, '_');
+            }
+            if (newLect) lecturerName = newLect.toUpperCase();
+            syncAllClassDropdowns();
+            updateMeetingPreview();
+            renderLiveFeed();
+            renderDashboard();
+            renderSPMPTable();
+            closeModal('modalSesi');
+            generateDynamicQR(false);
+            showToast('Tetapan Disimpan', `Sesi ${currentSession} dan ${declaredClasses.length} kelas telah dikemas kini.`, 'success');
+        }
+
+        // 5. PAPARAN LIVE FEED PELAJAR BARU ISI FORM
+        function renderLiveFeed() {
+            const container = document.getElementById('liveFeedList');
+            const countBadge = document.getElementById('liveFeedCount');
+            const activeClass = document.getElementById('meetingClass').value;
+            const activeDate = document.getElementById('meetingDate').value;
+
+            const filtered = attendanceRecords.filter(r => r.kelas === activeClass && r.date === activeDate).reverse();
+            countBadge.textContent = filtered.length;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 px-4 bg-white rounded-2xl border-2 border-dashed border-slate-200">
+                        <i class="fa-solid fa-user-clock text-3xl text-slate-300 mb-2"></i>
+                        <p class="font-bold text-sm text-slate-500">Belum ada pelajar merekod kehadiran untuk kelas ${activeClass} hari ini.</p>
+                        <p class="text-xs text-slate-400 mt-1">Rekod akan muncul di sini serta-merta selepas pelajar menghantar borang.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map((rec, idx) => `
+                <div class="bg-white p-3.5 rounded-2xl border-2 ${idx === 0 ? 'border-green-400 shadow-sm' : 'border-slate-200'} flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-xl ${idx === 0 ? 'bg-green-600 text-white' : 'bg-blue-100 text-blue-800'} font-display font-bold text-sm flex items-center justify-center shrink-0">
+                            ${filtered.length - idx}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <p class="font-bold text-sm text-slate-900 truncate">${rec.name}</p>
+                                ${idx === 0 ? '<span class="bg-green-100 text-green-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0">BARU</span>' : ''}
+                            </div>
+                            <p class="text-xs font-semibold text-slate-500">${rec.regNo} • <span class="text-blue-700 font-bold">${rec.kelas}</span></p>
+                        </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="inline-block bg-slate-100 text-slate-800 font-mono font-bold text-xs px-2.5 py-1 rounded-lg border border-slate-200">
+                            <i class="fa-regular fa-clock text-green-600 mr-1"></i>${rec.scanTime}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 6. BORANG KEHADIRAN PELAJAR (3 MINIT + ID UNIK + REKOD DIRI / KAWAN)
+        function openStudentScanForm(standalone = false) {
+            const kelas = document.getElementById('meetingClass').value;
+            const time = document.getElementById('meetingTime').value;
+            const type = document.querySelector('input[name="meetingType"]:checked')?.value || 'Kelas Semasa';
+
+            document.getElementById('formHeaderMeta').textContent = `${currentSession} • ${kelas} (${type})`;
+            document.getElementById('stuClass').value = kelas;
+            document.getElementById('stuClassTime').value = time;
+
+            document.getElementById('studentAttendanceForm').classList.remove('hidden');
+            document.getElementById('studentTimerBar').classList.remove('hidden');
+            document.getElementById('studentSuccessScreen').classList.add('hidden');
+            document.getElementById('studentExpiredScreen').classList.add('hidden');
+
+            if (standalone) {
+                document.getElementById('btnCloseStudentModal').classList.add('hidden');
+            }
+
+            // Semak jika peranti ini sudah rekod diri sendiri untuk slot waktu ini
+            const slotKey = `${document.getElementById('meetingDate').value}_${time}`;
+            const selfRadio = document.querySelector('input[name="entryMode"][value="self"]');
+            const friendRadio = document.querySelector('input[name="entryMode"][value="friend"]');
+            if (deviceSelfSubmittedSlots.has(slotKey)) {
+                selfRadio.disabled = true;
+                friendRadio.checked = true;
+            } else {
+                selfRadio.disabled = false;
+                selfRadio.checked = true;
+            }
+            handleEntryModeChange();
+
+            // Mulakan pemasa 3 minit (180 saat)
+            studentFormSeconds = 180;
+            updateStudentFormTimerText();
+            if (studentFormInterval) clearInterval(studentFormInterval);
+            studentFormInterval = setInterval(() => {
+                studentFormSeconds--;
+                updateStudentFormTimerText();
+                if (studentFormSeconds <= 0) {
+                    clearInterval(studentFormInterval);
+                    document.getElementById('studentAttendanceForm').classList.add('hidden');
+                    document.getElementById('studentTimerBar').classList.add('hidden');
+                    document.getElementById('studentExpiredScreen').classList.remove('hidden');
+                }
+            }, 1000);
+
+            openModal('modalStudentForm');
+        }
+
+        function updateStudentFormTimerText() {
+            const mins = String(Math.floor(studentFormSeconds / 60)).padStart(2, '0');
+            const secs = String(studentFormSeconds % 60).padStart(2, '0');
+            document.getElementById('studentFormTimerDisplay').textContent = `${mins}:${secs}`;
+        }
+
+        function handleEntryModeChange() {
+            const mode = document.querySelector('input[name="entryMode"]:checked')?.value || 'self';
+            const hint = document.getElementById('entryModeHint');
+            if (mode === 'friend') {
+                hint.innerHTML = `<i class="fa-solid fa-user-group mr-1 text-amber-600"></i> Mod Bantuan Rakan: Sila masukkan <strong>No. Pendaftaran & No. Telefon sebenar rakan</strong> anda.`;
+            } else {
+                hint.innerHTML = `<i class="fa-solid fa-circle-info mr-1"></i> Setiap telefon hanya dibenarkan merekod <strong>diri sendiri 1 kali</strong> bagi waktu kelas ini.`;
+            }
+        }
+
+        // 9. EKSPORT KE GOOGLE SHEETS BERBILANG TAB MENGIKUT KELAS (.XLSX) & MODAL UTILITI
+        function exportToGoogleSheetsMultiTab() {
+            const headers = ['Sesi', 'No_Pendaftaran', 'Nama_Pelajar', 'Kelas', 'No_Telefon', 'Tarikh', 'Masa_Kelas', 'Jenis_Perjumpaan', 'Lokasi', 'Masa_Imbas'];
+
+            if (typeof XLSX !== 'undefined') {
+                const wb = XLSX.utils.book_new();
+
+                // 1. Bina tab berasingan bagi setiap kelas yang telah diisytiharkan
+                declaredClasses.forEach(cls => {
+                    const classRecords = attendanceRecords.filter(r => r.kelas === cls.code);
+                    const rows = classRecords.map(r => [
+                        currentSession, r.regNo, r.name, r.kelas, r.phone, r.date, r.timeSlot, r.type, r.location, r.scanTime
+                    ]);
+                    const sheetData = [headers, ...rows];
+                    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                    // Nama tab helaian sah (maksimum 31 aksara)
+                    const safeSheetName = cls.code.replace(/[\\/?*[\]:]/g, '_').substring(0, 31);
+                    XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+                });
+
+                // 2. Tambah tab ringkasan keseluruhan semua kelas
+                const allRows = attendanceRecords.map(r => [
+                    currentSession, r.regNo, r.name, r.kelas, r.phone, r.date, r.timeSlot, r.type, r.location, r.scanTime
+                ]);
+                const wsAll = XLSX.utils.aoa_to_sheet([headers, ...allRows]);
+                XLSX.utils.book_append_sheet(wb, wsAll, 'SEMUA_KELAS');
+
+                const fileName = `Rekod_Kehadiran_${currentSession.replace(/[^A-Z0-9]/gi, '_')}_Mengikut_Kelas.xlsx`;
+                XLSX.writeFile(wb, fileName);
+                showToast('Fail Google Sheets Dijana', `Fail dengan ${declaredClasses.length} tab kelas berasingan telah dimuat turun.`, 'success');
+            } else {
+                // Sandaran CSV jika pustaka XLSX gagal dimuatkan
+                const rows = attendanceRecords.map(r => [
+                    currentSession, r.regNo, `"${r.name}"`, r.kelas, r.phone, r.date, `"${r.timeSlot}"`, `"${r.type}"`, `"${r.location}"`, r.scanTime
+                ].join(','));
+                const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+                const link = document.createElement('a');
+                link.setAttribute('href', encodeURI(csvContent));
+                link.setAttribute('download', `Kehadiran_${currentSession.replace(/[^A-Z0-9]/gi, '_')}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        function submitStudentAttendance(e) {
+            e.preventDefault();
+            const regNo = document.getElementById('stuRegNo').value.trim().toUpperCase();
+            const name = document.getElementById('stuName').value.trim().toUpperCase();
+            const kelas = document.getElementById('stuClass').value;
+            const phone = document.getElementById('stuPhone').value.trim().replace(/\s+/g, '');
+            const timeSlot = document.getElementById('stuClassTime').value;
+            const date = document.getElementById('meetingDate').value;
+            const type = document.querySelector('input[name="meetingType"]:checked')?.value || 'Kelas Semasa';
+            const location = document.getElementById('meetingLocation').value;
+            const entryMode = document.querySelector('input[name="entryMode"]:checked')?.value || 'self';
+
+            // Semakan ID Unik 1 (No. Pendaftaran) & ID Unik 2 (No. Telefon) bagi sesi masa kelas yang sama
+            const isDuplicate = attendanceRecords.some(r =>
+                r.date === date &&
+                r.timeSlot === timeSlot &&
+                (r.regNo.toUpperCase() === regNo || r.phone.replace(/\s+/g, '') === phone)
+            );
+
+            if (isDuplicate) {
+                showToast('Rekod Ditolak (Duplikasi)', 'No. Pendaftaran atau No. Telefon ini telah direkodkan untuk sesi masa kelas ini.', 'error');
+                return;
+            }
+
+            const now = new Date();
+            const scanTime = now.toTimeString().split(' ')[0];
+
+            attendanceRecords.push({
+                regNo, name, kelas, phone, date, timeSlot, type, location, scanTime, entryMode
+            });
+
+            if (entryMode === 'self') {
+                deviceSelfSubmittedSlots.add(`${date}_${timeSlot}`);
+            }
+
+            if (studentFormInterval) clearInterval(studentFormInterval);
+
+            // Papar skrin pengesahan ringkas
+            document.getElementById('studentAttendanceForm').classList.add('hidden');
+            document.getElementById('studentTimerBar').classList.add('hidden');
+            document.getElementById('studentSuccessScreen').classList.remove('hidden');
+            document.getElementById('successReceiptDetails').innerHTML = `
+                <p><strong>Nama:</strong> ${name}</p>
+                <p><strong>No. Pendaftaran:</strong> ${regNo}</p>
+                <p><strong>Kelas:</strong> ${kelas} • <strong>No. Tel:</strong> ${phone}</p>
+                <p><strong>Masa Kelas:</strong> ${timeSlot} (${scanTime})</p>
+            `;
+
+            document.getElementById('studentAttendanceForm').reset();
+            renderLiveFeed();
+            renderDashboard();
+            renderSPMPTable();
+        }
+
+        function switchToFriendModeAfterSuccess() {
+            openStudentScanForm(document.querySelector('header').classList.contains('hidden'));
+            const friendRadio = document.querySelector('input[name="entryMode"][value="friend"]');
+            friendRadio.checked = true;
+            handleEntryModeChange();
+        }
+
+        function closeStudentScanForm() {
+            if (studentFormInterval) clearInterval(studentFormInterval);
+            closeModal('modalStudentForm');
+        }
+
+        // 7. RENDER DASHBOARD ANALISIS & CARTA
+        function renderDashboard() {
+            const filterClass = document.getElementById('dashFilterClass').value;
+            const filterType = document.getElementById('dashFilterType').value;
+            const filterDate = document.getElementById('dashFilterDate').value;
+            const searchQuery = document.getElementById('dashSearchInput').value.trim().toLowerCase();
+
+            document.getElementById('dashboardClassHeading').textContent =
+                filterClass === 'SEMUA' ? 'ANALISIS KEHADIRAN: SEMUA KELAS' : `ANALISIS KEHADIRAN: KELAS ${filterClass}`;
+
+            const classStudents = filterClass === 'SEMUA'
+                ? spmpStudents
+                : spmpStudents.filter(s => s.kelas === filterClass);
+
+            const filteredRecords = attendanceRecords.filter(r => {
+                const matchClass = filterClass === 'SEMUA' || r.kelas === filterClass;
+                const matchType = filterType === 'SEMUA' || r.type === filterType;
+                const matchDate = !filterDate || r.date === filterDate;
+                const matchSearch = !searchQuery ||
+                    r.name.toLowerCase().includes(searchQuery) ||
+                    r.regNo.toLowerCase().includes(searchQuery);
+                return matchClass && matchType && matchDate && matchSearch;
+            });
+
+            // Kira KPI
+            const uniqueSessions = new Set(filteredRecords.map(r => `${r.date}_${r.timeSlot}_${r.kelas}`)).size || 1;
+            const totalExpected = classStudents.length * uniqueSessions;
+            const rate = totalExpected > 0 ? Math.min(100, Math.round((filteredRecords.length / totalExpected) * 100)) : 0;
+
+            let warningCount = 0;
+            classStudents.forEach(stu => {
+                const stuAtt = attendanceRecords.filter(r => r.regNo === stu.regNo).length;
+                const stuTotalSessions = new Set(attendanceRecords.filter(r => r.kelas === stu.kelas).map(r => `${r.date}_${r.timeSlot}`)).size || 1;
+                if ((stuAtt / stuTotalSessions) * 100 < 80) warningCount++;
+            });
+
+            document.getElementById('statTotalStudents').textContent = classStudents.length;
+            document.getElementById('statAttendanceRate').textContent = `${rate}%`;
+            document.getElementById('statPresentCount').textContent = `${filteredRecords.length} rekod hadir`;
+            document.getElementById('statTotalSessions').textContent = uniqueSessions;
+            document.getElementById('statWarningCount').textContent = warningCount;
+            document.getElementById('tableRecordCounter').textContent = `Menunjukkan ${filteredRecords.length} rekod`;
+
+            // Isi Jadual Rekod Terperinci
+            const tbody = document.getElementById('attendanceTableBody');
+            if (filteredRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400 font-bold">Tiada rekod kehadiran ditemui bagi tapisan semasa.</td></tr>`;
+            } else {
+                tbody.innerHTML = filteredRecords.map((r, i) => `
+                    <tr class="hover:bg-blue-50/60 transition">
+                        <td class="py-3 px-4 font-bold text-slate-500">${i + 1}</td>
+                        <td class="py-3 px-4 font-mono font-bold text-blue-900">${r.regNo}</td>
+                        <td class="py-3 px-4 font-bold text-slate-800">${r.name}</td>
+                        <td class="py-3 px-4"><span class="bg-blue-100 text-blue-800 text-xs font-extrabold px-2.5 py-1 rounded-lg">${r.kelas}</span></td>
+                        <td class="py-3 px-4 text-slate-600 font-mono text-xs">${r.phone}</td>
+                        <td class="py-3 px-4 text-xs font-semibold text-slate-700">${r.date} <br><span class="text-slate-400">${r.timeSlot}</span></td>
+                        <td class="py-3 px-4"><span class="bg-amber-100 text-amber-900 text-xs font-bold px-2.5 py-1 rounded-lg">${r.type}</span></td>
+                        <td class="py-3 px-4 text-center font-mono text-xs font-bold text-green-700">${r.scanTime}</td>
+                    </tr>
+                `).join('');
+            }
+
+            updateCharts(filteredRecords);
+        }
+
+        function resetDashFilters() {
+            document.getElementById('dashFilterType').value = 'SEMUA';
+            document.getElementById('dashFilterDate').value = '';
+            document.getElementById('dashSearchInput').value = '';
+            renderDashboard();
+        }
+
+        function updateCharts(records) {
+            if (typeof Chart === 'undefined') return;
+
+            // Carta 1: Trend mengikut tarikh
+            const dateMap = {};
+            records.forEach(r => { dateMap[r.date] = (dateMap[r.date] || 0) + 1; });
+            const labelsDate = Object.keys(dateMap).sort();
+            const dataDate = labelsDate.map(d => dateMap[d]);
+
+            const ctx1 = document.getElementById('attendanceTrendChart');
+            if (ctx1) {
+                if (trendChartInstance) trendChartInstance.destroy();
+                trendChartInstance = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: labelsDate.length ? labelsDate : ['Tiada Data'],
+                        datasets: [{
+                            label: 'Bilangan Pelajar Hadir',
+                            data: dataDate.length ? dataDate : [0],
+                            backgroundColor: '#2563eb',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            // Carta 2: Pecahan jenis perjumpaan
+            const typeMap = {};
+            records.forEach(r => { typeMap[r.type] = (typeMap[r.type] || 0) + 1; });
+            const labelsType = Object.keys(typeMap);
+            const dataType = labelsType.map(t => typeMap[t]);
+
+            const ctx2 = document.getElementById('meetingTypeChart');
+            if (ctx2) {
+                if (typeChartInstance) typeChartInstance.destroy();
+                typeChartInstance = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labelsType.length ? labelsType : ['Tiada Data'],
+                        datasets: [{
+                            data: dataType.length ? dataType : [1],
+                            backgroundColor: ['#2563eb', '#f59e0b', '#16a34a', '#9333ea']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        }
+
+        // 8. INTEGRASI SPMP & PENILAIAN BERTERUSAN (PB)
+        function renderSPMPTable() {
+            const filterClass = document.getElementById('globalClassFilter').value;
+            document.getElementById('spmpClassLabel').textContent = filterClass;
+
+            const list = filterClass === 'SEMUA'
+                ? spmpStudents
+                : spmpStudents.filter(s => s.kelas === filterClass);
+
+            const tbody = document.getElementById('spmpIntegratedTableBody');
+            tbody.innerHTML = list.map((stu, idx) => {
+                const attended = attendanceRecords.filter(r => r.regNo === stu.regNo).length;
+                const totalSess = new Set(attendanceRecords.filter(r => r.kelas === stu.kelas).map(r => `${r.date}_${r.timeSlot}`)).size || 1;
+                const pct = Math.min(100, Math.round((attended / totalSess) * 100));
+                const totalPB = (Number(stu.quiz) || 0) + (Number(stu.practical) || 0);
+
+                return `
+                    <tr class="hover:bg-green-50/60">
+                        <td class="py-3 px-4 font-mono font-bold text-xs text-slate-700">${stu.regNo}</td>
+                        <td class="py-3 px-4 font-bold text-xs text-slate-900">${stu.name}</td>
+                        <td class="py-3 px-4 text-xs font-extrabold text-blue-700">${stu.kelas}</td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="px-2 py-0.5 rounded-full text-xs font-extrabold ${pct >= 80 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-700'}">${pct}%</span>
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <input type="number" min="0" max="40" value="${stu.quiz}" onchange="updatePBMark('${stu.regNo}', 'quiz', this.value)" class="w-16 text-center border border-slate-300 rounded-lg py-1 text-xs font-bold">
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <input type="number" min="0" max="60" value="${stu.practical}" onchange="updatePBMark('${stu.regNo}', 'practical', this.value)" class="w-16 text-center border border-slate-300 rounded-lg py-1 text-xs font-bold">
+                        </td>
+                        <td class="py-3 px-4 text-center font-display font-bold text-sm text-emerald-700">${totalPB}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updatePBMark(regNo, field, val) {
+            const stu = spmpStudents.find(s => s.regNo === regNo);
+            if (stu) {
+                stu[field] = Number(val) || 0;
+                renderSPMPTable();
+                showToast('Markah PB Dikemas Kini', `Markah ${regNo} telah disimpan.`, 'success');
+            }
+        }
+
+        function handleSPMPUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
+                let added = 0;
+                lines.forEach((line, idx) => {
+                    if (idx === 0 && line.toLowerCase().includes('pendaftaran')) return;
+                    const parts = line.split(',');
+                    if (parts.length >= 3) {
+                        const regNo = parts[0].trim().toUpperCase();
+                        const name = parts[1].trim().toUpperCase();
+                        const kelas = parts[2].trim().toUpperCase();
+                        const phone = (parts[3] || '012-0000000').trim();
+                        if (!spmpStudents.some(s => s.regNo === regNo)) {
+                            spmpStudents.push({ regNo, name, kelas, phone, quiz: 0, practical: 0 });
+                            added++;
+                        }
+                    }
+                });
+                renderSPMPTable();
+                renderDashboard();
+                showToast('Import SPMP Berjaya', `${added} rekod pelajar baharu ditambah dari fail SPMP.`, 'success');
+            };
+            reader.readAsText(file);
+        }
+
+        // 9. EKSPORT KE GOOGLE SHEETS (.CSV) & MODAL UTILITI
+        function exportToGoogleSheetsCSV() {
+            const filterClass = document.getElementById('dashFilterClass').value;
+            const records = filterClass === 'SEMUA'
+                ? attendanceRecords
+                : attendanceRecords.filter(r => r.kelas === filterClass);
+
+            const headers = ['Sesi', 'No_Pendaftaran', 'Nama_Pelajar', 'Kelas', 'No_Telefon', 'Tarikh', 'Masa_Kelas', 'Jenis_Perjumpaan', 'Lokasi', 'Masa_Imbas'];
+            const rows = records.map(r => [
+                currentSession, r.regNo, `"${r.name}"`, r.kelas, r.phone, r.date, `"${r.timeSlot}"`, `"${r.type}"`, `"${r.location}"`, r.scanTime
+            ].join(','));
+
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `Kehadiran_${filterClass}_${currentSession.replace(/[^A-Z0-9]/gi, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Fail Dijana', 'Fail CSV sedia dimuat naik ke folder Google Drive / Google Sheets anda.', 'success');
+        }
+
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('hidden');
+                el.classList.add('flex');
+            }
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            }
+        }
+
+        function showToast(title, message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const colors = {
+                success: 'bg-green-600 border-green-800',
+                error: 'bg-red-600 border-red-800',
+                info: 'bg-blue-700 border-blue-900'
+            };
+            const toast = document.createElement('div');
+            toast.className = `${colors[type] || colors.info} text-white p-3.5 rounded-2xl shadow-xl border-b-4 pointer-events-auto transition transform duration-300`;
+            toast.innerHTML = `<p class="font-display font-bold text-xs uppercase">${title}</p><p class="text-xs opacity-95 mt-0.5">${message}</p>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
