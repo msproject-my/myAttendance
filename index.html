@@ -130,11 +130,11 @@
                         <i id="sesiEditIcon" class="fa-solid fa-pen-to-square text-xs opacity-80 ml-1 hidden"></i>
                     </button>
 
-                    <!-- Pemilih Kelas Utama (Dipaparkan apabila Admin log masuk) -->
-                    <div id="adminGlobalClassBox" class="hidden bg-white text-slate-800 px-4 py-2 rounded-2xl shadow-md border-2 border-yellow-400 items-center gap-2 w-full sm:w-auto">
+                    <!-- Pemilih Kelas Utama (Sentiasa Boleh Dipilih Terus di Header) -->
+                    <div id="adminGlobalClassBox" class="flex bg-white text-slate-800 px-4 py-2 rounded-2xl shadow-md border-2 border-yellow-400 items-center gap-2 w-full sm:w-auto">
                         <i class="fa-solid fa-users-rectangle text-blue-600 text-lg"></i>
                         <div class="flex flex-col flex-1">
-                            <label for="globalClassFilter" class="text-[10px] font-extrabold uppercase text-slate-400 leading-none">Paparan Kelas:</label>
+                            <label for="globalClassFilter" class="text-[10px] font-extrabold uppercase text-slate-400 leading-none">Pilih Kelas Paparan:</label>
                             <select id="globalClassFilter" onchange="handleGlobalClassChange()" class="font-display font-bold text-blue-900 text-sm sm:text-base bg-transparent focus:outline-none cursor-pointer">
                             </select>
                         </div>
@@ -207,6 +207,14 @@
 
                 <!-- Kad Ringkasan 5 Info Utama di Bahagian Atas -->
                 <div class="p-5 bg-white">
+                    <!-- Bar Butang Pilihan Kelas Pantas -->
+                    <div class="mb-4 pb-3 border-b border-slate-100 flex flex-wrap items-center gap-2">
+                        <span class="text-[11px] font-extrabold text-slate-400 uppercase mr-1"><i class="fa-solid fa-filter text-blue-500 mr-1"></i>Tukar Kelas:</span>
+                        <div id="quickClassPillsContainer" class="flex flex-wrap items-center gap-1.5">
+                            <!-- Diisi secara dinamik oleh JavaScript -->
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                         <!-- 1. Kelas & Kursus -->
                         <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-3.5 flex items-center gap-3">
@@ -1151,26 +1159,18 @@
             renderDeclaredClassesModalList();
         }
 
-            updateMeetingPreview();
-            generateDynamicQR(false);
-            startQRCountdown();
-            renderLiveFeed();
-            renderDashboard();
-            renderSPMPTable();
-        };
-
         // 3. PENJANAAN KOD QR DINAMIK (AUTO-TUKAR SETIAP 5 MINIT)
         function generateDynamicQR(manualNotify = false) {
-            const kelas = document.getElementById('meetingClass').value;
-            const date = document.getElementById('meetingDate').value;
-            const time = document.getElementById('meetingTime').value;
-            const location = document.getElementById('meetingLocation').value;
+            const kelas = document.getElementById('meetingClass').value || 'DKA1A';
+            const date = document.getElementById('meetingDate').value || todayStr;
+            const time = document.getElementById('meetingTime').value || '02:00 PM - 04:00 PM';
+            const location = document.getElementById('meetingLocation').value || 'F2F (Bersemuka)';
             const type = document.querySelector('input[name="meetingType"]:checked')?.value || 'Kelas Semasa';
 
             // Jana token keselamatan rawak baharu
             currentSecurityToken = 'PPD-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-            // Bina pautan ringkas & sah supaya QRCode.js sentiasa dapat melukis dengan jelas
+            // Bina pautan ringkas & sah supaya QRCode.js sentiasa melukis dengan jelas
             let baseUrl = window.location.href.split('?')[0];
             if (!baseUrl.startsWith('http')) {
                 baseUrl = 'https://kehadiran.polipd.edu.my/scan';
@@ -1180,9 +1180,8 @@
             const linkInput = document.getElementById('dynamicLinkInput');
             if (linkInput) linkInput.value = dynamicUrl;
 
-            // Lukis Kod QR Utama
+            // Lukis Kod QR Utama & Skrin Penuh
             renderQRCodeToElement('qrcodeCanvas', dynamicUrl, 200);
-            // Lukis Kod QR Skrin Penuh Projektor
             renderQRCodeToElement('projectorQrCanvas', dynamicUrl, 260);
 
             document.getElementById('projSesi').textContent = currentSession;
@@ -1212,7 +1211,6 @@
                     throw new Error("QRCode library not loaded");
                 }
             } catch (err) {
-                // Sandaran SVG jika library luar disekat
                 container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=${sizePx}x${sizePx}&data=${encodeURIComponent(textValue)}" alt="Kod QR Kehadiran" class="rounded-xl w-[${sizePx}px] h-[${sizePx}px]">`;
             }
         }
@@ -1242,7 +1240,7 @@
             modal.classList.add('flex');
         }
 
-        // 4. PENJANAAN KOD QR DINAMIK (AUTO-TUKAR SETIAP 5 MINIT)
+        // 4. KAWALAN MOD ADMIN (admin2026) & PENYELARASAN PAPARAN KELAS
         function handleSesiBadgeClick() {
             if (isAdminAuthenticated) {
                 openSesiAndClassModal();
@@ -1266,7 +1264,6 @@
 
         function applyAdminUIState(unlocked) {
             const adminNav = document.getElementById('adminNavBar');
-            const adminClassBox = document.getElementById('adminGlobalClassBox');
             const btnAdminLogin = document.getElementById('btnHeaderAdminLogin');
             const btnToggleSetup = document.getElementById('btnAdminToggleSetup');
             const adminQrTools = document.getElementById('adminQrTools');
@@ -1274,8 +1271,6 @@
 
             if (unlocked) {
                 adminNav.classList.remove('hidden');
-                adminClassBox.classList.remove('hidden');
-                adminClassBox.classList.add('flex');
                 btnAdminLogin.classList.add('hidden');
                 btnToggleSetup.classList.remove('hidden');
                 btnToggleSetup.classList.add('flex');
@@ -1283,8 +1278,6 @@
                 sesiEditIcon.classList.remove('hidden');
             } else {
                 adminNav.classList.add('hidden');
-                adminClassBox.classList.add('hidden');
-                adminClassBox.classList.remove('flex');
                 btnAdminLogin.classList.remove('hidden');
                 btnToggleSetup.classList.add('hidden');
                 btnToggleSetup.classList.remove('flex');
@@ -1353,7 +1346,7 @@
             const isHidden = panel.classList.contains('hidden');
             if (isHidden) {
                 panel.classList.remove('hidden');
-                btnText.textContent = 'Tutup Tetapan';
+                btnText.textContent = 'Tutup Panel Tetapan';
             } else {
                 panel.classList.add('hidden');
                 btnText.textContent = 'Ubah Tetapan Kelas';
@@ -1362,7 +1355,7 @@
 
         function updateMeetingPreview() {
             const kelas = document.getElementById('meetingClass').value;
-            const course = document.getElementById('meetingCourse').value;
+            const course = document.getElementById('meetingCourse').value.split('-')[0].trim();
             const date = document.getElementById('meetingDate').value;
             const time = document.getElementById('meetingTime').value;
             const location = document.getElementById('meetingLocation').value;
@@ -1371,27 +1364,52 @@
             const type = document.querySelector('input[name="meetingType"]:checked')?.value || 'Kelas Semasa';
 
             document.getElementById('topDisplayClass').textContent = kelas;
-            document.getElementById('topDisplayCourse').textContent = course.split('-')[0].trim();
+            document.getElementById('topDisplayCourse').textContent = course;
             document.getElementById('topDisplayDate').textContent = date;
             document.getElementById('topDisplayNotes').textContent = notes || 'Sesi Kuliah';
             document.getElementById('topDisplayTime').textContent = time;
-            document.getElementById('topDisplayLocation').textContent = location.split('(')[0].trim();
-            document.getElementById('topDisplayRoom').textContent = room || '-';
+            document.getElementById('topDisplayLocation').textContent = location.includes('Online') ? 'Online' : 'F2F (Bersemuka)';
+            document.getElementById('topDisplayRoom').textContent = room;
             document.getElementById('topDisplayType').textContent = type;
 
             const locIcon = document.getElementById('topLocationIcon');
-            if (location.toLowerCase().includes('online')) {
+            if (location.includes('Online')) {
                 locIcon.className = 'fa-solid fa-laptop-house';
             } else {
                 locIcon.className = 'fa-solid fa-building-columns';
             }
+
+            renderQuickClassPills();
             renderLiveFeed();
+        }
+
+        function renderQuickClassPills() {
+            const container = document.getElementById('quickClassPillsContainer');
+            if (!container) return;
+            const activeClass = document.getElementById('meetingClass').value;
+            container.innerHTML = declaredClasses.map(c => {
+                const isActive = c.code === activeClass;
+                return `<button type="button" onclick="selectActiveClass('${c.code}')" class="px-3 py-1 rounded-xl text-xs font-extrabold transition cursor-pointer ${isActive ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300' : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700'}">${c.code}</button>`;
+            }).join('');
+        }
+
+        function selectActiveClass(classCode) {
+            document.getElementById('globalClassFilter').value = classCode;
+            document.getElementById('meetingClass').value = classCode;
+            document.getElementById('dashFilterClass').value = classCode;
+            renderQuickClassPills();
+            updateMeetingPreview();
+            generateDynamicQR(false);
+            renderLiveFeed();
+            renderDashboard();
+            renderSPMPTable();
         }
 
         function syncClassFromMeeting() {
             const selected = document.getElementById('meetingClass').value;
             document.getElementById('globalClassFilter').value = selected;
             document.getElementById('dashFilterClass').value = selected;
+            renderQuickClassPills();
             updateMeetingPreview();
             generateDynamicQR(false);
         }
@@ -1401,6 +1419,7 @@
             document.getElementById('dashFilterClass').value = selected;
             if (selected !== 'SEMUA') {
                 document.getElementById('meetingClass').value = selected;
+                renderQuickClassPills();
                 updateMeetingPreview();
                 generateDynamicQR(false);
             }
@@ -1412,6 +1431,13 @@
         function syncFromDashFilter() {
             const selected = document.getElementById('dashFilterClass').value;
             document.getElementById('globalClassFilter').value = selected;
+            if (selected !== 'SEMUA') {
+                document.getElementById('meetingClass').value = selected;
+                renderQuickClassPills();
+                updateMeetingPreview();
+                generateDynamicQR(false);
+            }
+            renderLiveFeed();
             renderDashboard();
             renderSPMPTable();
         }
@@ -1497,7 +1523,6 @@
                 document.getElementById('btnCloseStudentModal').classList.add('hidden');
             }
 
-            // Semak jika peranti ini sudah rekod diri sendiri untuk slot waktu ini
             const slotKey = `${document.getElementById('meetingDate').value}_${time}`;
             const selfRadio = document.querySelector('input[name="entryMode"][value="self"]');
             const friendRadio = document.querySelector('input[name="entryMode"][value="friend"]');
@@ -1510,7 +1535,6 @@
             }
             handleEntryModeChange();
 
-            // Mulakan pemasa 3 minit (180 saat)
             studentFormSeconds = 180;
             updateStudentFormTimerText();
             if (studentFormInterval) clearInterval(studentFormInterval);
@@ -1531,61 +1555,17 @@
         function updateStudentFormTimerText() {
             const mins = String(Math.floor(studentFormSeconds / 60)).padStart(2, '0');
             const secs = String(studentFormSeconds % 60).padStart(2, '0');
-            document.getElementById('studentFormTimerDisplay').textContent = `${mins}:${secs}`;
+            const el = document.getElementById('studentFormTimerDisplay');
+            if (el) el.textContent = `${mins}:${secs}`;
         }
 
         function handleEntryModeChange() {
             const mode = document.querySelector('input[name="entryMode"]:checked')?.value || 'self';
             const hint = document.getElementById('entryModeHint');
             if (mode === 'friend') {
-                hint.innerHTML = `<i class="fa-solid fa-user-group mr-1 text-amber-600"></i> Mod Bantuan Rakan: Sila masukkan <strong>No. Pendaftaran & No. Telefon sebenar rakan</strong> anda.`;
+                hint.innerHTML = `<i class="fa-solid fa-user-group mr-1 text-amber-600"></i> Mod <strong>Rekod Orang Lain</strong>: Membantu rakan yang tidak membawa telefon. ID Unik tetap disemak.`;
             } else {
                 hint.innerHTML = `<i class="fa-solid fa-circle-info mr-1"></i> Setiap telefon hanya dibenarkan merekod <strong>diri sendiri 1 kali</strong> bagi waktu kelas ini.`;
-            }
-        }
-
-        // 9. EKSPORT KE GOOGLE SHEETS BERBILANG TAB MENGIKUT KELAS (.XLSX) & MODAL UTILITI
-        function exportToGoogleSheetsMultiTab() {
-            const headers = ['Sesi', 'No_Pendaftaran', 'Nama_Pelajar', 'Kelas', 'No_Telefon', 'Tarikh', 'Masa_Kelas', 'Jenis_Perjumpaan', 'Lokasi', 'Masa_Imbas'];
-
-            if (typeof XLSX !== 'undefined') {
-                const wb = XLSX.utils.book_new();
-
-                // 1. Bina tab berasingan bagi setiap kelas yang telah diisytiharkan
-                declaredClasses.forEach(cls => {
-                    const classRecords = attendanceRecords.filter(r => r.kelas === cls.code);
-                    const rows = classRecords.map(r => [
-                        currentSession, r.regNo, r.name, r.kelas, r.phone, r.date, r.timeSlot, r.type, r.location, r.scanTime
-                    ]);
-                    const sheetData = [headers, ...rows];
-                    const ws = XLSX.utils.aoa_to_sheet(sheetData);
-                    // Nama tab helaian sah (maksimum 31 aksara)
-                    const safeSheetName = cls.code.replace(/[\\/?*[\]:]/g, '_').substring(0, 31);
-                    XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
-                });
-
-                // 2. Tambah tab ringkasan keseluruhan semua kelas
-                const allRows = attendanceRecords.map(r => [
-                    currentSession, r.regNo, r.name, r.kelas, r.phone, r.date, r.timeSlot, r.type, r.location, r.scanTime
-                ]);
-                const wsAll = XLSX.utils.aoa_to_sheet([headers, ...allRows]);
-                XLSX.utils.book_append_sheet(wb, wsAll, 'SEMUA_KELAS');
-
-                const fileName = `Rekod_Kehadiran_${currentSession.replace(/[^A-Z0-9]/gi, '_')}_Mengikut_Kelas.xlsx`;
-                XLSX.writeFile(wb, fileName);
-                showToast('Fail Google Sheets Dijana', `Fail dengan ${declaredClasses.length} tab kelas berasingan telah dimuat turun.`, 'success');
-            } else {
-                // Sandaran CSV jika pustaka XLSX gagal dimuatkan
-                const rows = attendanceRecords.map(r => [
-                    currentSession, r.regNo, `"${r.name}"`, r.kelas, r.phone, r.date, `"${r.timeSlot}"`, `"${r.type}"`, `"${r.location}"`, r.scanTime
-                ].join(','));
-                const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
-                const link = document.createElement('a');
-                link.setAttribute('href', encodeURI(csvContent));
-                link.setAttribute('download', `Kehadiran_${currentSession.replace(/[^A-Z0-9]/gi, '_')}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
             }
         }
 
@@ -1609,35 +1589,36 @@
             );
 
             if (isDuplicate) {
-                showToast('Rekod Ditolak (Duplikasi)', 'No. Pendaftaran atau No. Telefon ini telah direkodkan untuk sesi masa kelas ini.', 'error');
+                showToast('Rekod Ditolak (Duplikasi)', 'No. Pendaftaran atau No. Telefon ini telah direkodkan bagi sesi kelas semasa.', 'error');
                 return;
             }
-
-            const now = new Date();
-            const scanTime = now.toTimeString().split(' ')[0];
-
-            attendanceRecords.push({
-                regNo, name, kelas, phone, date, timeSlot, type, location, scanTime, entryMode
-            });
 
             if (entryMode === 'self') {
                 deviceSelfSubmittedSlots.add(`${date}_${timeSlot}`);
             }
 
-            if (studentFormInterval) clearInterval(studentFormInterval);
+            const now = new Date();
+            const scanTime = now.toTimeString().split(' ')[0];
+            attendanceRecords.push({
+                regNo, name, kelas, phone, date, timeSlot, type, location, scanTime, entryMode
+            });
 
-            // Papar skrin pengesahan ringkas
+            if (studentFormInterval) clearInterval(studentFormInterval);
             document.getElementById('studentAttendanceForm').classList.add('hidden');
             document.getElementById('studentTimerBar').classList.add('hidden');
             document.getElementById('studentSuccessScreen').classList.remove('hidden');
+
             document.getElementById('successReceiptDetails').innerHTML = `
-                <p><strong>Nama:</strong> ${name}</p>
-                <p><strong>No. Pendaftaran:</strong> ${regNo}</p>
-                <p><strong>Kelas:</strong> ${kelas} • <strong>No. Tel:</strong> ${phone}</p>
-                <p><strong>Masa Kelas:</strong> ${timeSlot} (${scanTime})</p>
+                <div class="flex justify-between"><span class="text-slate-500">Nama:</span><span class="font-bold text-slate-900">${name}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">No. Pendaftaran:</span><span class="font-mono font-bold text-blue-900">${regNo}</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Kelas & Masa:</span><span class="font-bold text-slate-800">${kelas} (${timeSlot})</span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Masa Direkod:</span><span class="font-mono font-bold text-green-700">${scanTime}</span></div>
             `;
 
-            document.getElementById('studentAttendanceForm').reset();
+            document.getElementById('stuRegNo').value = '';
+            document.getElementById('stuName').value = '';
+            document.getElementById('stuPhone').value = '';
+
             renderLiveFeed();
             renderDashboard();
             renderSPMPTable();
